@@ -1,2 +1,1 @@
-// Public backend address only. No secrets belong in this file.
-window.QUEST_CONFIG = {"apiBase":"https://backend.example.invalid"};
+window.QUEST_CONFIG = { apiBase: 'https://champions-api.3.138.213.176.nip.io' };
