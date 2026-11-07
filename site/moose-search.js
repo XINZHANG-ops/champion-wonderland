@@ -9,7 +9,14 @@ function findMatches(players,query){
 function mount(host,renderer){
  const box=document.createElement('details');box.className='moose-search';
  box.innerHTML='<summary>Find a moose</summary><form role="search"><label>Search by nickname<input type="search" placeholder="Your moose’s name" maxlength="28" autocomplete="off"></label><p class="moose-search-status" role="status">Type a name to find your moose.</p><ul class="moose-search-results" aria-label="Matching moose"></ul><button type="button" class="moose-search-reset">Show whole map</button></form>';
- host.appendChild(box);
+ const hud=document.createElement('div');hud.className='map-hud';
+ const row=document.createElement('div');row.className='map-hud-row';
+ const season=document.createElement('span');season.className='map-season';
+ const garden=renderer.season||window.QuestEnvironment?.garden();
+ season.textContent=garden?garden.label+' · Daylight':'';season.hidden=!garden;
+ const controls=host.querySelector('.world-view-controls');
+ if(controls)hud.appendChild(controls);
+ row.append(season,box);hud.appendChild(row);host.appendChild(hud);renderer.hasMapHud=true;
  const input=box.querySelector('input'),list=box.querySelector('ul'),status=box.querySelector('[role="status"]'),summary=box.querySelector('summary');let players=[],matches=[],selected=null;
  function select(player){
   if(!renderer.focusPlayer(player.id)){render();return}
@@ -31,7 +38,7 @@ function mount(host,renderer){
  box.querySelector('.moose-search-reset').onclick=()=>{selected=null;input.value='';summary.textContent='Find a moose';renderer.fitGrounds();render();box.open=false;summary.focus()};
  box.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();box.open=false;summary.focus()}};
  box.addEventListener('toggle',()=>{if(box.open){render();input.focus()}});
- return {update(value){players=value;if(selected){const player=players.find(p=>p.id===selected);summary.textContent=player?'Found: '+player.name:'Find a moose';if(!player)selected=null}if(box.open)render()},destroy(){box.remove()}};
+ return {update(value){players=value;if(selected){const player=players.find(p=>p.id===selected);summary.textContent=player?'Found: '+player.name:'Find a moose';if(!player)selected=null}if(box.open)render()},destroy(){if(controls)host.appendChild(controls);hud.remove();renderer.hasMapHud=false}};
 }
 window.QuestMooseSearch={mount,findMatches};
 })();

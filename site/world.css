@@ -17,10 +17,17 @@
 @media(max-width:1050px){.world-next-step{gap:12px;max-width:calc(100% - 105px);padding:13px 15px}.world-next-step b{font-size:12px}.world-next-step .primary{padding:12px 16px;font-size:13px}.mission-options{max-height:360px}.mission-options .option{min-height:88px;padding:10px;gap:6px}.mission-options .option b{font-size:11px}.matched-resource-grid{grid-template-columns:1fr}.pass-fields{column-gap:10px}.quick-pass .field{font-size:11px}.world-next-step small{max-width:230px;line-height:1.5}}
 @media(max-width:720px){.world-next-step{bottom:96px;max-width:calc(100% - 28px);width:440px;padding:12px;gap:9px;flex-wrap:wrap}.world-next-step .primary{flex:1;min-height:48px;justify-content:center}.world-next-step>div{flex:1}.world-next-step small{max-width:none}.world-next-step .next-step-number{width:32px;height:32px;font-size:13px}.world-overlay .world-pillbar{bottom:34px;max-width:96%;justify-content:flex-start}.world-overlay .world-instructions{font-size:8px;bottom:12px}.mission-options{max-height:none;overflow:visible;padding:2px}.mission-options .option{min-height:94px}.pass-fields{grid-template-columns:1fr}.quick-pass .field{margin:6px 0}.matched-resource-grid{grid-template-columns:1fr}.world-mission-cta{min-height:44px}}
 .custom-picks{border:0;padding:0;margin:15px 0}.custom-picks legend{font-size:11px;font-weight:700;margin-bottom:9px}.custom-picks .style-pick{min-height:39px;font-size:11px;padding:9px 11px}.character-card .custom-input{font-size:16px;min-height:46px}.character-options{overflow-y:auto;scrollbar-gutter:stable;padding-right:5px}.season-pick{display:flex;gap:8px;align-items:center}.coat-icon{width:20px;height:22px;display:inline-block;clip-path:polygon(25% 0,40% 9%,60% 9%,75% 0,100% 25%,85% 55%,77% 45%,80% 100%,20% 100%,23% 45%,15% 55%,0 25%);background:#f58220}.coat-icon.autumn{background:linear-gradient(90deg,#b56437 45%,#eadbc3 45% 55%,#b56437 55%)}.coat-icon.winter{width:24px;background:repeating-linear-gradient(0deg,#557583 0 5px,#c3d4ce 5px 6px);filter:drop-shadow(0 -2px 0 #e5d4b8)}.world-header-title{font-size:15px}.world-header-title small{max-width:270px}.world-map-heading h2{max-width:490px}.herd-title h1{font-size:22px}.character-actions .primary{min-height:48px}@media(max-width:720px){.world-map-heading h2{max-width:300px}.custom-picks .style-pick{min-height:42px}.character-card h2{font-size:25px}.character-privacy{font-size:10px}}
-.moose-search{position:absolute;right:16px;top:14px;z-index:5;width:280px;max-width:calc(100% - 24px);font-size:12px;color:#40583f}
+.world-stage,.common-campus{container-type:inline-size}
+.map-hud{position:absolute;top:14px;right:16px;z-index:5;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:calc(100% - 24px)}
+.map-hud .world-view-controls{position:static;flex-wrap:wrap;justify-content:flex-end;margin:0}
+.map-hud-row{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;max-width:100%}
+.map-season{padding:9px 11px;border:1px solid #dbe2d3;border-radius:10px;background:#fffdf5ed;color:#5c6e5a;font:10px Arial;white-space:nowrap}
+.moose-search{position:relative;max-width:100%;font-size:12px;color:#40583f}
+.moose-search summary{box-sizing:border-box}
+@container(max-width:900px){.map-hud{top:78px;right:12px}}
 .moose-search summary{list-style:none;cursor:pointer;display:block;margin-left:auto;width:max-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:11px 14px;border:1px solid #cdd8c2;border-radius:10px;background:#fffdf5f5;font-weight:700;box-shadow:0 3px 14px #35402a12}
 .moose-search summary::-webkit-details-marker{display:none}
-.moose-search form{margin-top:8px;background:#fffdf8;border:1px solid #dce2d3;border-radius:12px;padding:14px;box-shadow:0 10px 35px #35402a25;max-height: min(420px,55vh);overflow:auto}
+.moose-search form{position:absolute;right:0;top:100%;width:280px;max-width:calc(100vw - 48px);box-sizing:border-box;margin-top:8px;background:#fffdf8;border:1px solid #dce2d3;border-radius:12px;padding:14px;box-shadow:0 10px 35px #35402a25;max-height: min(420px,55vh);overflow:auto}
 .moose-search label{display:block;font-weight:700;font-size:11px}
 .moose-search input{display:block;width:100%;margin-top:8px;padding:11px;border:1px solid #b9c9ad;border-radius:7px;font:16px Arial;background:#fff;box-sizing:border-box}
 .moose-search-status{font-size:11px;line-height:1.5;color:#65715e;margin:11px 0}
@@ -33,7 +40,7 @@
 .moose-search :focus-visible{outline:3px solid #e88227;outline-offset:3px}
 .quest-avatar-tools{display:flex;justify-content:flex-end;margin:0 0 10px}
 .quest-avatar-tools button{border:1px solid #d7dfcd;border-radius:8px;background:#fffdf8;padding:10px 14px;min-height:42px;color:#4f6245;font-weight:600}
-@media(max-width:720px){.world-stage>.moose-search{top:66px;right:12px}.moose-search summary{padding:10px;font-size:11px}.moose-search form{max-height:45vh}.herd-screen .moose-search{top:55px;right:12px}}
+@media(max-width:720px){.moose-search summary{padding:10px;font-size:11px}.moose-search form{max-height:40vh}.map-hud{top:78px;right:12px}}
 
 .world-overlay .join-dialog{z-index:10;min-width:0;grid-template-columns:minmax(0,1fr)}
 .world-overlay .character-card{box-sizing:border-box;min-width:0;max-width:100%;justify-self:center}
