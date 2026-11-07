@@ -27,10 +27,6 @@
   }
   r.cube(x-.03,y+.12,1.61,.13,2,wood,15);
  }
- function table(r,x,y,w=1.25,d=.68){
-  for(const dx of [.08,w-.18])for(const dy of [.06,d-.14])r.cube(x+dx,y+dy,.1,.1,15,wood);
-  r.cube(x,y,w,d,3,'#dfbe91',15);
- }
  const roles={
   educator:['Teaching corner','book'],explorer:['Mission pavilion','book'],
   designer:['Creative studio','art'],admin:['Control center','chart'],
@@ -45,7 +41,7 @@
    board(this,x,y,'#406858',icon);
    this.label(title.toUpperCase(),x+.78,y,54);
   });
-  const seat=(x,y)=>prop(x+.53,y+.2,()=>this.bench(x,y));
+  const seat=(x,y,facing='south')=>prop(x+.53,y+.2,()=>this.bench(x,y,facing));
   const [roleTitle,roleIcon]=roles[ctx.role]||roles.educator;
   sign(10.4,10.7,roleTitle,roleIcon);
   const challenge=ctx.challengeText||'';
@@ -53,12 +49,13 @@
    if(ctx.missionId==='analytics')sign(4.7,7.2,'Learning analytics lab','chart');
    else if(ctx.missionId==='interactive')sign(4.7,7.2,'Interactive course studio','play');
    else if(/accessib/i.test(challenge))prop(5.05,7.65,()=>{
+    for(const x of [4.6,5.5])this.shape([[x,6.8,0],[x,6.8,18],[x,8.5,1],[x,8.5,0]],'#b18b61');
     this.shape([[4.6,6.8,18],[5.5,6.8,18],[5.5,8.5,1],[4.6,8.5,1]],'#dbb17e');
     for(let i=0;i<4;i++)this.line(this.p(4.6,7+i*.4,16-i*4),this.p(5.5,7+i*.4,16-i*4),'#f0d6aa',1);
     this.label('ACCESS FOR EVERYONE',5.1,8.6,25);
    });
    else if(/AI|time|content|development/i.test(challenge))sign(4.7,7.2,'Idea lab','art');
-   else{seat(4.5,7.1);seat(6.2,7.4);this.district(z.id,()=>this.label('CONNECT & DISCOVER',5.5,7.4,48))}
+   else{seat(4.5,7.1,'east');seat(6.2,7.4,'west');this.district(z.id,()=>this.label('CONNECT & DISCOVER',5.5,7.4,48))}
   }
   const step=ctx.step||3;
   if(step>=4&&ctx.products?.length){
@@ -75,21 +72,21 @@
   }
   if(step>=5){
    const ch=ctx.channels||[];
-   if(ch.includes('workshop')){seat(3.5,10.1);seat(5.1,10.1);prop(4.45,11,()=>table(this,4.1,10.7,.7,.7))}
+   if(ch.includes('workshop')){seat(6.6,9.1,'east');seat(8.5,9.1,'west');prop(8.03,9.28,()=>this.table(7.68,8.93,.7,.7))}
    if(ch.includes('webinar')||ch.includes('video'))sign(6,10.4,'Screening room','play');
-   if(ch.includes('conference'))prop(4.4,7.75,()=>{this.cube(3.4,7.3,2,.9,5,'#cbb18e');this.cube(4.25,7.4,.3,.3,20,wood,5);this.cube(4.16,7.34,.5,.43,3,wood,25)});
+   if(ch.includes('conference'))prop(2.4,7.75,()=>{this.cube(1.4,7.3,2,.9,5,'#cbb18e');this.cube(2.25,7.4,.3,.3,20,wood,5);this.cube(2.16,7.34,.5,.43,3,wood,25)});
    if(ch.includes('email'))prop(6.4,12.8,()=>{this.cube(6.3,12.7,.12,.12,18,wood);this.cube(6.1,12.5,.6,.5,12,'#eea45f',18);this.cube(6.2,13,.37,.02,2,'#705745',25)});
-   if(ch.includes('paper'))prop(3.8,12.6,()=>{table(this,3.4,12.2,.8,.8);this.cube(3.5,12.3,.6,.5,2,paper,18)});
+   if(ch.includes('paper'))prop(3.8,12.6,()=>{this.table(3.4,12.2,.8,.8);this.cube(3.5,12.3,.6,.5,2,paper,18)});
    if(ch.includes('roundtable')||ch.includes('officehours')){
-    seat(10.5,7.2);seat(12.1,7.2);prop(11.6,7.9,()=>{table(this,11.1,7.6);this.label('MEET & EXCHANGE',11.5,7.8,55)});
+    seat(10.1,7.5,'east');seat(12.2,7.5,'west');prop(11.7,7.7,()=>{this.table(11.06,7.35);this.label('MEET & EXCHANGE',11.5,7.8,55)});
    }
-   if(ch.includes('selfpaced'))prop(7.05,12.2,()=>{table(this,6.8,11.9,.7,.6);for(let i=0;i<3;i++)this.cube(6.85,12,.5,.35,3,['#eeb67b','#b7a3cd','#8eafac'][i],18+i*3)});
+   if(ch.includes('selfpaced'))prop(7.05,12.2,()=>{this.table(6.8,11.9,.7,.6);for(let i=0;i<3;i++)this.cube(6.85,12,.5,.35,3,['#eeb67b','#b7a3cd','#8eafac'][i],18+i*3)});
    if(ch.includes('sandbox'))sign(10.6,13,'Try it yourself','play');
   }
   if(ctx.storyTypes?.length)sign(2.5,9,'Customer stories','book');
   if(step>=6)prop(6.75,7.55,()=>{
    this.cube(6.3,7.1,.9,.9,5,'#d5b986');this.cube(6.65,7.45,.18,.18,24,'#e6ba63',5);
-   const p=this.p(6.75,7.55,41);
+   const p=this.p(6.74,7.54,39);
    this.polygon([[p[0]-10,p[1]-12],[p[0]+10,p[1]-12],[p[0]+8,p[1]+3],[p[0],p[1]+11],[p[0]-8,p[1]+3]],'#e5b45a');
    this.text('✦',p[0],p[1]+1,12,paper);this.label('MISSION COMPLETE',6.8,7.6,65);
   });

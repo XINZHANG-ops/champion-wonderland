@@ -71,7 +71,7 @@ class WorldRenderer{
  district(id,draw){const z=D.zones[id],project=this.p;this.p=(x,y,h=0)=>project.call(this,z.origin[0]+x*z.scale,z.origin[1]+y*z.scale,h);try{draw()}finally{this.p=project}}
  districtEntities(time,add){for(const z of Object.values(D.zones)){if(z.id==='hq'){add(44,()=>this.headquarters());continue}const depth=(x,y)=>z.origin[0]+z.origin[1]+(x+y)*z.scale;add(depth(5,5),()=>this.district(z.id,()=>this.building(z.id==='he'?'university':z.id==='corp'?'corporate':z.id==='k12'?'kindergarten':'civic')));add(depth(11,5),()=>this.district(z.id,()=>z.id==='k12'?this.playground(time):this.library(z.id==='corp',z.id==='public'?'PUBLIC LIBRARY':undefined)));add(depth(5,12),()=>this.district(z.id,()=>z.id==='k12'?this.sandbox():this.fountain(4.2,11.1,time)));if(z.id==='k12')add(depth(11,12),()=>this.district(z.id,()=>this.storyGarden()));
  else{
-  for(const [x,y] of [[10.3,11.4],[12.1,12.5]])add(depth(x+.53,y+.18),()=>this.district(z.id,()=>this.bench(x,y)));
+  for(const [x,y] of [[10.3,11.4],[12.1,12.5]])add(depth(x+.53,y+.18),()=>this.district(z.id,()=>this.bench(x,y,'north')));
   add(depth(11.5,11.4),()=>this.district(z.id,()=>this.flowers(11.5,11.4,z.id==='corp'?'#a29cbe':'#e4af79')));
  }
  add(z.x+z.y+z.h-1,()=>this.label(z.label,z.x+z.w/2,z.y+z.h-.8,-8))}}
@@ -84,12 +84,47 @@ class WorldRenderer{
  line(a,b,color,width=2){const c=this.ctx;c.beginPath();c.moveTo(...a);c.lineTo(...b);c.strokeStyle=color;c.lineWidth=width;c.stroke()}
  text(text,x,y,size=10,color='#4d6254',align='center'){const c=this.ctx;c.font=`600 ${size}px 'DM Sans',Arial,sans-serif`;c.fillStyle=color;c.textAlign=align;c.fillText(text,x,y)}
  tree(x,y,s=1,color='#6f9164'){this.cube(x-.07,y-.07,.14,.14,30*s,'#a98b66');const pt=this.p(x,y);this.polygon([[pt[0]-23*s,pt[1]-24*s],[pt[0],pt[1]-84*s],[pt[0]+23*s,pt[1]-24*s],[pt[0],pt[1]-8*s]],color);this.polygon([[pt[0],pt[1]-84*s],[pt[0]+23*s,pt[1]-24*s],[pt[0],pt[1]-8*s]],shade(color,-19));this.polygon([[pt[0]-17*s,pt[1]-47*s],[pt[0],pt[1]-96*s],[pt[0]+18*s,pt[1]-47*s],[pt[0],pt[1]-33*s]],shade(color,15))}
- flowers(x,y,color='#e4af79'){for(let i=0;i<5;i++){const p=this.p(x+(i%3)*.22,y+Math.floor(i/3)*.23);this.line([p[0],p[1]],[p[0],p[1]-8],'#779568',1.5);this.polygon([[p[0]-3,p[1]-8],[p[0],p[1]-12],[p[0]+4,p[1]-8],[p[0],p[1]-5]],color)}}
- bench(x,y){
-  for(const dx of [.08,.86])for(const dy of [.02,.26])this.cube(x+dx,y+dy,.1,.1,8,'#776b58');
-  for(const dy of [0,.2])this.cube(x,y+dy,1.05,.16,2,'#c8a77c',8);
-  for(const dx of [.08,.86])this.cube(x+dx,y,.1,.09,10,'#776b58',10);
-  this.cube(x,y,1.05,.08,5,'#b89367',16);
+ flowers(x,y,color='#e4af79',z=0){for(let i=0;i<5;i++){const p=this.p(x+(i%3)*.22,y+Math.floor(i/3)*.23,z);this.line([p[0],p[1]],[p[0],p[1]-8],'#779568',1.5);this.polygon([[p[0]-3,p[1]-8],[p[0],p[1]-12],[p[0]+4,p[1]-8],[p[0],p[1]-5]],color)}}
+ // The supplied coordinate is the original bench footprint; rotation keeps its center fixed.
+ bench(x,y,facing='south',base=0){
+  const part=(u,v,w,d,h,color,z)=>{
+   let px=x+u,py=y+v;
+   if(facing==='north') {px=x+1.05-u-w;py=y+.36-v-d}
+   if(facing==='east'||facing==='west'){
+    px=x+.525+(facing==='east'?v-.18:.18-v-d);
+    py=y+.18+(facing==='east'?.525-u-w:u-.525);
+    [w,d]=[d,w];
+   }
+   this.cube(px,py,w,d,h,color,base+z);
+  };
+  for(const u of [.09,.84])for(const v of [.025,.24])part(u,v,.12,.095,8,'#716951',0);
+  for(const v of [0,.19])part(0,v,1.05,.17,2,'#c8a77c',8);
+  for(const u of [.09,.84])part(u,0,.12,.085,10,'#716951',10);
+  part(0,0,1.05,.085,5,'#aa875e',15);
+ }
+ table(x,y,w=1.25,d=.68){
+  for(const dx of [.08,w-.18])for(const dy of [.06,d-.14])this.cube(x+dx,y+dy,.1,.1,15,'#ac8056');
+  this.cube(x,y,w,d,3,'#dfbe91',15);
+ }
+ segment(a,b,color,width){this.line(this.p(...a),this.p(...b),color,width)}
+ slide(x,y,canopyColor){
+  const deck=27,wood='#927b60',metal='#78998a';
+  for(const dx of [.05,1.12])for(const dy of [.05,.95])this.cube(x+dx,y+dy,.13,.13,64,metal);
+  this.cube(x,y,1.3,1.12,4,'#bd9466',deck-4);
+  // The ladder meets the side of the deck; the chute starts on its front edge.
+  for(const dy of [.19,.81])this.segment([x+2.00,y+dy,0],[x+1.30,y+dy,deck],wood,3);
+  for(let i=1;i<=5;i++){
+   const dx=1.30+.70*(1-i/5);
+   this.segment([x+dx,y+.19,deck*i/5],[x+dx,y+.81,deck*i/5],wood,2.6);
+  }
+  this.roof(x-.02,y-.02,1.35,1.16,64,canopyColor);
+  const lanes=[[1.12,deck],[2.18,4],[2.52,2]];
+  for(let i=1;i<lanes.length;i++){
+   const [v,h]=lanes[i-1],[next,k]=lanes[i];
+   this.shape([[x+.28,y+v,h],[x+1,y+v,h],[x+1,y+next,k],[x+.28,y+next,k]],'#eeb06c');
+   for(const u of [.28,1])this.shape([[x+u,y+v,h],[x+u,y+next,k],[x+u,y+next,k+3],[x+u,y+v,h+3]],'#bc814f');
+  }
+  this.cube(x+.28,y+2.52,.72,.22,2,'#edb478');
  }
  label(name,x,y,z=0){const p=this.p(x,y,z),c=this.ctx;c.font='600 10px DM Sans, Arial';const width=c.measureText(name).width+22;c.fillStyle='#fffdf0ed';c.beginPath();c.roundRect(p[0]-width/2,p[1]-12,width,23,6);c.fill();c.strokeStyle='#d4dcc9';c.lineWidth=.7;c.stroke();this.text(name,p[0],p[1]+3,9)}
  building(type){if(type==='kindergarten'){this.cube(3.2,3.3,4,3.3,55,'#efd3a6');this.roof(3.2,3.3,4,3.3,55,'#cf9787');this.window(3.55,6.61,15,.65,21,'#a4c7b0');this.window(6.15,6.61,15,.65,21,'#9dbecb');this.window(4.85,6.62,0,.65,33,'#91ad88');for(let i=0;i<6;i++)this.cube(3.2+i*.66,6.63,.65,.16,6,['#d98f7e','#e1b370','#d4c37d','#9ab68b','#91b7ba','#af9dba'][i],41);this.label('RAINBOW CLASSROOM',5.2,4.9,110)}
@@ -98,8 +133,8 @@ class WorldRenderer{
  if(type==='civic'){this.cube(3.2,3.3,4.1,3.3,65,'#ded9bd');this.roof(3.2,3.3,4.1,3.3,65,'#91a482');for(let i=0;i<5;i++)this.cube(3.4+i*.78,6.64,.2,.2,44,'#f4edd5',4);this.window(4.85,6.65,0,.7,34,'#8ba79a');this.label('COMMUNITY LEARNING',5.3,4.7,117)}
  }
  library(corporate=false,title){this.cube(10,3.4,3.2,3.2,corporate?48:57,corporate?'#b3acc6':'#ded7ba');if(corporate){this.cube(9.9,3.3,3.4,3.4,4,'#d9d4df',48)}else this.roof(10,3.4,3.2,3.2,57,'#8c9d82');for(let i=0;i<3;i++)this.window(10.3+i*.92,6.61,12,.65,27,corporate?'#768ca1':'#9ebcaf');this.label(title||(corporate?'SKILLS LAB':'CAMPUS LIBRARY'),11.6,4.8,corporate?93:112)}
- playground(t){this.cube(10.2,3.6,2.5,2.5,3,'#d5b77f');this.cube(10.5,4,.15,.15,52,'#8fa7a4');this.cube(12.2,4,.15,.15,52,'#8fa7a4');this.cube(10.5,5.9,.15,.15,52,'#8fa7a4');this.cube(12.2,5.9,.15,.15,52,'#8fa7a4');this.roof(10.45,3.95,1.95,2.15,52,'#86a7a1');this.shape([[11.9,5.8,37],[12.5,5.8,37],[13.3,7,3],[12.7,7,3]],'#dc9c72');for(let i=0;i<4;i++)this.cube(10.55,4.35+i*.32,1.65,.08,2,'#c8ab7b',8+i*9);const a=this.p(10.2,3,63);this.line(a,[a[0],a[1]-20],'#9ba38a',2);this.polygon([[a[0],a[1]-20],[a[0]+15,a[1]-17],[a[0],a[1]-10]],'#e7b85f');this.label('THE PLAYGROUND',11.5,4.3,108)}
- fountain(x,y,t){this.cube(x,y,1.8,1.8,7,'#c3c9b5');this.cube(x+.15,y+.15,1.5,1.5,1,'#a0c8bf',7);this.cube(x+.73,y+.73,.32,.32,24,'#d6d9c2',7);const p=this.p(x+.9,y+.9,31);const wave=this.motion?Math.sin(t/700)*3:0;this.line(p,[p[0],p[1]-15-wave],'#bce5d9',3);this.ctx.strokeStyle='#d9f2e5';this.ctx.lineWidth=1.5;this.ctx.beginPath();this.ctx.ellipse(p[0],p[1]+25,20+wave,8,0,0,Math.PI*2);this.ctx.stroke()}
+ playground(){this.slide(10.9,4.1,'#86a7a1');this.label('THE PLAYGROUND',11.5,4.6,110)}
+ fountain(x,y,t){this.cube(x,y,1.8,1.8,7,'#c3c9b5');this.cube(x+.15,y+.15,1.5,1.5,1,'#a0c8bf',7);this.cube(x+.73,y+.73,.32,.32,24,'#d6d9c2',7);const p=this.p(x+.89,y+.89,31);const wave=this.motion?Math.sin(t/700)*3:0;this.line(p,[p[0],p[1]-15-wave],'#bce5d9',3);this.ctx.strokeStyle='#d9f2e5';this.ctx.lineWidth=1.5;this.ctx.beginPath();this.ctx.ellipse(p[0],p[1]+25,20+wave,8,0,0,Math.PI*2);this.ctx.stroke()}
  sandbox(){this.cube(3.8,11,2,1.8,5,'#c5a16f');this.cube(3.96,11.16,1.68,1.48,1,'#f1dbaa',5);this.cube(4.3,11.5,.4,.4,10,'#d99e83',6);this.cube(5,11.6,.35,.35,7,'#93b6b0',6);this.cube(4.8,12,.3,.3,6,'#b0a1c2',6);this.label('SANDBOX',4.8,12.9,-18)}
  storyGarden(){for(let i=0;i<5;i++){const a=i/5*Math.PI*2;this.cube(11.1+Math.cos(a)*.9,11.8+Math.sin(a)*.9,.35,.35,10,['#dca28b','#c5b47e','#aabf8c','#8eb3ad','#b5a3bc'][i])}this.cube(10.85,11.55,.8,.65,8,'#d5c39a');this.label('STORY CIRCLE',11.5,13.4,-8)}
 
@@ -125,7 +160,7 @@ class WorldRenderer{
  draw(time){this.renderTime=time;this.applyResize();if(!this.w||!this.h)return;const followed=this.players.find(p=>p.id===this.focusId);if(followed){const pos=this.positionFor(followed,time);this.camera={x:pos.x,y:pos.y};this.updateCamera()}this.now=this.clock();this.season=QuestEnvironment.garden();this.labels=[];this.playerLabels=[];this.labelBoxes=[];if(this.groundStamp!==this.season.stamp){this.groundLayer=null;this.groundStamp=this.season.stamp}const c=this.ctx,w=this.season;c.fillStyle=w.sky;c.fillRect(0,0,this.w,this.h);const glow=c.createRadialGradient(this.w*.5,this.h*.35,10,this.w*.5,this.h*.35,this.w*.6);glow.addColorStop(0,'#fffdf299');glow.addColorStop(1,w.sky);c.fillStyle=glow;c.fillRect(0,0,this.w,this.h);this.drawBackdrop?.();c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);this.drawGround();this.welcomePlazaFloor();this.picnicFloor?.();
  const entities=[];const add=(depth,fn)=>entities.push({depth,fn});this.districtEntities(time,add);
  this.sceneryEntities(time,add);this.missionEntities?.(add);
- for(const[x,y]of[[44,32],[49,40]])add(x+y,()=>this.bench(x,y));
+ for(const[x,y]of[[44,32],[49,40]])add(x+y,()=>this.bench(x,y,y<36?'south':'north'));
  for(const[x,y]of[[43.3,31.4],[49.4,31.4],[43.3,41],[49.4,41]])add(x+y,()=>this.flowers(x,y,this.season.flower));
  this.label('WELCOME · MEET LUCY',46.75,31,28);
  this.crowdSize=this.players.length;for(const p of this.players){const pos=this.positionFor(p,time);add(pos.x+pos.y+.2,()=>this.character(p,time));}
