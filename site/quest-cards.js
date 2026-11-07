@@ -10,7 +10,7 @@
  async function assetData(path){const image=new Image();image.src=new URL(path,document.baseURI).href;await image.decode();const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);return c.toDataURL('image/png');}
  async function create(record,avatar){
   const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=640;
-  const [portrait,logo,qr]=await Promise.all([root.QuestCardArt.draw(canvas,avatar,record.industryId),assetData('./assets/cards/d2l-logo.png'),assetData('./assets/cards/champions-qr.png')]);
+  const [portrait,logo,qr]=await Promise.all([root.QuestCardArt.draw(canvas,avatar,record.industryId),assetData('./assets/cards/d2l-logo.png'),assetData('./assets/cards/champions-qr.png?v=rounded-20261107')]);
   const html=root.QuestCardTemplate.adventureCard(model(record)).replace('cid:moosePortrait',portrait).replace('cid:d2lLogo',logo).replace('cid:championsQr',qr);
   return{portrait,html};
  }
