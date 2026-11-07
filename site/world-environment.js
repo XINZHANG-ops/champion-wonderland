@@ -1,6 +1,6 @@
 (function(root){
 'use strict';
-const duration=60000,transition=8000;
+const duration=20000,transition=4000;
 const seasons=[
  {id:'spring',name:'Spring',sky:'#edf6ef',ground:'#c6d9b3',path:'#eee3c9',foliage:'#8dbb76',flower:'#efa7b8',water:'#9cd5db'},
  {id:'summer',name:'Summer',sky:'#edf5ee',ground:'#97c96f',path:'#eee4ca',foliage:'#3f9b56',flower:'#f3b96b',water:'#82c5ce'},
@@ -14,6 +14,6 @@ function at(time=Date.now()){
  result.snow=(current.id==='winter'?1:0)*(1-mix)+(next.id==='winter'?1:0)*mix;
  return result;
 }
-function garden(){return {...seasons[1],index:1,mix:0,stamp:'summer-garden',label:'Summer garden',snow:0};}
+function garden(time=Date.now()){return at(time);}
 const api={garden,seasons,duration,transition,blend,at};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.QuestEnvironment=api;
 })(typeof window!=='undefined'?window:globalThis);
