@@ -2,3 +2,8 @@
 
 /* One event screen, rather than four separate room panels. */
 .herd-screen .herd-grid{display:flex;flex:1;overflow:hidden;min-height:0}.herd-screen .common-campus{flex:1;min-height:0}.district-counts{position:absolute;right:16px;bottom:18px;display:flex;gap:7px;flex-wrap:wrap;max-width:90%;padding:9px;background:#fffdf2eb;border:1px solid #dbe1d1;border-radius:12px}.district-counts>span{display:flex;gap:8px;align-items:center;padding:6px 9px;border-radius:7px;background:#f3f5eb}.district-counts b{font-size:10px;font-weight:600}.district-counts i{font-size:10px;font-style:normal;background:#e0e9d3;padding:3px 6px;border-radius:20px}.herd-screen .herd-title h1{font-size:24px}@media(max-width:800px){.district-counts{left:10px;right:10px;bottom:12px;max-width:none;justify-content:center;padding:6px;gap:4px}.district-counts b{font-size:8px}.district-counts>span{padding:4px}.herd-screen .herd-title h1{font-size:18px}}@media(max-width:480px){.herd-screen .herd-main{overflow:hidden}.herd-screen .common-campus{min-height:0}.herd-screen .herd-bottom{height:93px;flex-direction:row}.herd-screen .herd-bottom>div:first-child{display:none}.herd-screen .herd-gallery{min-height:0}.herd-world-head{max-width:90%}}
+.herd-screen .common-campus{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"tools" "map" "areas"}
+.common-campus>canvas{grid-area:map;min-width:0;min-height:0}
+.common-campus>.herd-world-head{display:none}
+.common-campus>.district-counts{position:static;grid-area:areas;max-width:100%;margin:0;justify-content:flex-start;border:0;border-top:1px solid #e0e1d7;border-radius:0;background:#fffdf8;flex-wrap:nowrap;overflow-x:auto}
+.common-campus>.district-counts>span{flex-shrink:0}
