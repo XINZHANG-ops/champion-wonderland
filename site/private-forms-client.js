@@ -11,5 +11,6 @@
     if (!ready()) throw Error('Saving is not connected yet. Your answers remain in this tab.');
     return window.QuestGoogleForms.submit(endpoint(), record, submissionId);
   }
-  window.QuestPrivateFormsClient = { ready, submit };
+  async function sendCard(record,submissionId,card){if(!ready())throw Error('Card delivery is not connected.');return window.QuestGoogleForms.submit(endpoint(),record,submissionId,card);}
+  window.QuestPrivateFormsClient = { ready, submit, sendCard };
 })();

@@ -40,3 +40,16 @@ git push origin main
 ```
 
 Do not use force push or discard local changes. If Git reports divergence or local changes, stop and inspect. The existing Pages URL stays the same. The current release targets the public game-only API and Lucy's direct Google receiver. Never add backend credentials or visitor responses here.
+
+
+## Personalized Ignite Canada Moose cards
+
+The approved five fixed background templates, official D2L logo and Champions QR are included. Moose configuration, name, selected missions, topics and formats are personalized locally in the browser. The final review has a separate optional card-email choice; it is independent of resource/marketing follow-up. After the Form confirms a saved response, the browser prepares a preview and sends a separate native POST directly to the same Google receiver only if that receiver explicitly advertises card support. The multiplayer API receives no card recipient or questionnaire payload.
+
+The deployment owner must first install the complete updated Google script and run `setupCardMail` from **qkang1022@gmail.com**, then update the existing web-app deployment to a new version. Keep the same `/exec` URL and execute-as-owner/public-access settings. Do not run `setupForm` again. The owner script and authorization instructions are supplied separately, outside this public repository.
+
+Pending card images and the minimal email content are stored only in that owner's private Google Drive outbox. A Google trigger checks every minute, sending at most ten per execution and respecting the account's remaining recipient quota. Sent outbox files are moved to that owner's Google Drive trash. A consumer Apps Script account normally has 100 recipient sends per 24-hour quota window, shared with its other scripts; larger events may wait across quota windows. Ambiguous send results are held for owner review instead of being automatically resent. No API key, Google authorization token, SMTP password or user responses are present in this repository.
+
+The game API compatibility ID remains `lucy-wonderland-v6-f4434aa46f`; this frontend update does not require restarting the existing game backend. New asset cache tag: `cards1`. Older receiver versions keep normal Form saving and in-browser card previews working, but will not be reported as supporting automatic card email.
+
+Validation: `node tests/cards-client.cjs`, `node tests/cards-flow.cjs`, `node tests/map-mobile.cjs`, `node tests/world-return.cjs`. Google mail/queue tests run in the private source checkout with mock Google services. Actual sender authorization and an inbox delivery test must be completed by the Google deployment owner before calling card email live.

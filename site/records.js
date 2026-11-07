@@ -11,11 +11,11 @@
   const final=copy({...record,checkpoint:'complete',questCompleted:true}),current=visitor(final),bytes=JSON.stringify(final);
   if(current.pending){if(current.receipt.bytes===bytes)return current.pending;throw Error('Saving is already in progress.');}
   if(current.receipt?.bytes!==bytes)current.receipt={bytes,id:crypto.randomUUID(),saved:false};
-  if(current.receipt.saved)return{saved:true,recordId:record.recordId};
+  if(current.receipt.saved)return{saved:true,recordId:record.recordId,submissionId:current.receipt.id,cardEnabled:current.receipt.cardEnabled===true};
   current.latest=final;current.status='saving';changed();
   const receipt=current.receipt;
   current.pending=(async()=>{
-   try{await window.QuestPrivateFormsClient.submit(final,receipt.id);receipt.saved=true;current.status='saved';return{saved:true,recordId:record.recordId};}
+   try{const result=await window.QuestPrivateFormsClient.submit(final,receipt.id);receipt.saved=true;receipt.cardEnabled=result.cardEnabled===true;current.status='saved';return{saved:true,recordId:record.recordId,submissionId:receipt.id,cardEnabled:receipt.cardEnabled};}
    catch(error){current.status='error';throw error;}
    finally{current.pending=null;changed();}
   })();

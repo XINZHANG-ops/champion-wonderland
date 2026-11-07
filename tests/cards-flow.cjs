@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'../site'),calls=[],buttons=new Map();let fail=false;
+class Image{constructor(){this.naturalWidth=264;this.naturalHeight=126}async decode(){}}
+const sandbox={Image,URL,document:{baseURI:'https://lucy-kang1022.github.io/champion-wonderland/',getElementById:id=>buttons.get(id)||null,createElement:()=>({getContext:()=>({drawImage(){}}),toDataURL:()=> 'data:image/png;base64,STATIC'})},QuestWorldData:require('../site/world-data.js'),QuestMissions:require('../site/mission-catalog.js'),QuestCardArt:{themes:require('../site/card-art.js').themes,draw:async()=> 'data:image/png;base64,PORTRAIT'},QuestCardTemplate:require('../site/card-template.js'),QuestPrivateFormsClient:{async sendCard(record,id,card){calls.push({record,id,card});if(fail)throw Error('network');return{status:'queued'}}}};sandbox.window=sandbox;vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(root,'quest-cards.js'),'utf8'),sandbox);
+const C=sandbox.QuestCards,record={recordId:'real',industryId:'he',name:'Private Example',workEmail:'private@example.test',missionIds:['ai','accessibility'],useCases:['Campus learning'],contentTopics:['AI in teaching & learning'],preferredFormats:['Webinar'],questCompleted:true};
+const ready=()=>new Promise(resolve=>setImmediate(resolve)),options={email:true,receipt:{submissionId:'stable-form-id',cardEnabled:true}};
+(async()=>{
+ const mapped=C.model(record);assert.equal(mapped.missions.length,2);assert.equal(mapped.world,'Higher Education');assert.equal(mapped.interests[0],'AI in teaching & learning');
+ const pack=await C.create(record,{});assert(pack.html.includes('PORTRAIT'));assert(!pack.html.includes('cid:'));assert(!pack.html.includes('private@example'));
+ C.start(record,{},options,()=>{});C.start(record,{},options,()=>{});await ready();assert.equal(calls.length,1);assert.equal(calls[0].id,'stable-form-id');assert(C.markup('real').includes('queued for email'));assert(calls[0].card.requested);
+ C.start({...record,recordId:'opt-out'},{},{...options,email:false},()=>{});C.start({...record,recordId:'sample',isSample:true},{},options,()=>{});C.start({...record,recordId:'old-receiver'},{},{...options,receipt:{cardEnabled:false}},()=>{});await ready();assert.equal(calls.length,1);assert(C.markup('opt-out').includes('card is ready'));assert(C.markup('sample').includes('No email will be sent'));assert(C.markup('old-receiver').includes('Email delivery is not available yet'));
+ fail=true;C.start({...record,recordId:'retry'},{},options,()=>{});await ready();assert(C.markup('retry').includes('retry safely'));buttons.set('retry-adventure-card',{});C.bind('retry');fail=false;await buttons.get('retry-adventure-card').onclick();await ready();assert.equal(calls.at(-1).id,calls.at(-2).id);assert(C.markup('retry').includes('queued for email'));C.forget('retry');assert(C.markup('retry').includes('Preparing'));
+ assert(C.preferenceMarkup('<x@example.test>',true).includes('&lt;x@example.test&gt;'));
+ console.log('PASS: actual selection-to-card mapping, customized image composition, opt-out, no sample email, old receiver compatibility, shared completion task and safe retry ID. No live requests.');
+})().catch(error=>{console.error(error);process.exitCode=1});
