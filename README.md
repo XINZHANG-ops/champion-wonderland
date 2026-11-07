@@ -60,4 +60,8 @@ A random browser identifier is stored locally and used only for joining the publ
 
 ## Focused recommendations
 
-The match card and resource cart recommend at most two learning tracks and two distinct products/services, ranked with the existing challenge-match scores. Original user selections stay intact in the questionnaire. The six D2L resource destinations use the supplied campaign/product URLs; interactive Watch Demo links remain separate. Run `node tests/limited-matches.cjs` to verify ranking, counts and all six URLs.
+The match card recommends at most two learning tracks and two distinct products/services, ranked with the existing challenge-match scores. Original user selections stay intact in the questionnaire. The six D2L resource destinations use the supplied campaign/product URLs; interactive Watch Demo links remain separate. Run `node tests/limited-matches.cjs` to verify ranking, counts and all six URLs.
+
+## Segment-specific one-question flow
+
+Each segment has its own challenge wording in `site/challenge-catalog.js`, using stable IDs for the existing matching rules. Every track asks only “Explore your challenges” (up to five). Learning formats contain the fourteen requested options with no selection cap. The submit button saves the answer snapshot and waits for the card queue handoff before opening the completion page. Completion shows the Champions CTA, with recovery controls only if something actually fails. Repeated summary, queue status and card-preview blocks are removed. Private questionnaire routes and the Google schema are unchanged.
