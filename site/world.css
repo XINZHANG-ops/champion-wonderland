@@ -42,3 +42,5 @@
 
 .world-canvas,.herd-world>canvas{touch-action:none;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 .world-canvas.is-panning,.herd-world>canvas.is-panning{cursor:grabbing}
+
+.world-next-step[hidden]{display:none}

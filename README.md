@@ -9,6 +9,10 @@
 - No questionnaire relay, SMTP or Gmail route exists in this frontend. The final button says Saved only after Google's matching positive receipt. A timeout remains a retryable error with the same submission ID.
 - The questionnaire record ID is not sent to the multiplayer backend. Public nicknames are independently chosen; don't put private contact details in a nickname.
 
+## Returning to the world
+
+The same browser remembers only the public nickname, moose appearance, area and zoom. Refreshing or reopening the page returns directly to the world. Start over clears these settings. Contact details and questionnaire answers remain outside this cache; private unfinished answers still live only in the current tab. No hardware fingerprint or persistent game bearer token is collected. A new page creates a fresh game visit using the remembered public settings, so the previous page's exit cannot remove the new visit. The exact old walking coordinate is not restored.
+
 ## Publishing
 
 1. The owner must first update the existing Apps Script deployment with the supplied `Code.txt`, allowing `https://lucy-kang1022.github.io`. Update the **existing deployment** to a new version; keep the same `/exec` address. Do not run setup again.
