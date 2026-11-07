@@ -6,7 +6,11 @@ const context={console,document:doc,QuestRecords:{ready:()=>true,subscribe(){},s
  assert(html.includes('Hi, I’m your guide Lucy!'));assert(html.includes('Your role / job title'));
  assert(!html.includes('A quick booth adventure'));assert(!html.includes('Your choices stay in this tab'));assert(!html.includes('data-select="educator"'));
  element('#sample').onclick();assert.equal(run('state.step'),2);
- await run("select('he');nextQuest()");await run("select('0');nextQuest()");
+ await run("select('he');nextQuest()");
+ const missionOptions=html.match(/<div class="mission-options">([\s\S]*?)<\/div><p class="mission-selection-count"/)[1];
+ for(const m of context.QuestMissions.missions){assert(missionOptions.includes('<b>'+m.title+'</b>'));assert(!missionOptions.includes(m.productName),'Mission options show only track titles, without product subtitles');}
+ assert(!missionOptions.includes('<small'));
+ await run("select('0');nextQuest()");
  assert.equal(run('state.discoveryStep'),0);assert(html.includes('Explore your challenges'));
  for(const key of ['useCases','successMetrics','timing'])assert(!html.includes('data-answer="'+key+'"'));
  assert.equal(run('canAdvanceQuest()'),false);
