@@ -57,3 +57,7 @@ Validation: `node tests/cards-client.cjs`, `node tests/cards-flow.cjs`, `node te
 ## One Moose per browser
 
 A random browser identifier is stored locally and used only for joining the public game. The game stores its SHA-256 hash, never includes it in world snapshots, and reuses the same Moose across reloads/tabs. No hardware fingerprint, email, or questionnaire answers are used. Closing one tab does not remove another tab’s Moose; after all tabs close, heartbeat expiry removes it from the online map within 45 seconds. Clearing site data, private browsing or a different browser creates a separate identity. New nicknames are blank and required.
+
+## Focused recommendations
+
+The match card and resource cart recommend at most two learning tracks and two distinct products/services, ranked with the existing challenge-match scores. Original user selections stay intact in the questionnaire. The six D2L resource destinations use the supplied campaign/product URLs; interactive Watch Demo links remain separate. Run `node tests/limited-matches.cjs` to verify ranking, counts and all six URLs.

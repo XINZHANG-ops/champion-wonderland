@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const root=path.resolve(__dirname,'../site'),S=require(path.join(root,'solution-matching.js')),M=require(path.join(root,'mission-catalog.js'));
+const urls={lumi:'https://www.d2l.com/d2l-lumi-move-beyond-ai-experimentation/',creator:'https://www.d2l.com/brightspace/creator/',access:'https://www.d2l.com/brightspace/accessibility-plus/',optimization:'https://www.d2l.com/make-more-room-for-what-matters/',services:'https://www.d2l.com/learning-services/',performance:'https://www.d2l.com/brightspace/performance/'};
+for(const[id,url]of Object.entries(urls))assert.equal(S.solutions.find(p=>p.id===id).url,url);
+const state={missionIds:['ai','accessibility','course-design'],industry:'he',role:'educator',useCases:[],painPoints:['accessibility','course_refresh','staff_time'],channels:['webinar']},original=JSON.stringify(state);
+assert.deepEqual(S.missionMatches(state).map(p=>p.id),['access','services']);assert.deepEqual(S.recommendedMissionIds(state),['accessibility','course-design']);assert.equal(JSON.stringify(state),original,'Recommendations must not discard the original selections');
+const box={QuestCatalog:require(path.join(root,'quest-catalog.js')),QuestMissions:M,QuestSolutions:S};box.window=box;vm.createContext(box);vm.runInContext(fs.readFileSync(path.join(root,'lead-ui.js'),'utf8'),box);
+const html=box.QuestLeadUI.matches(state),cart=box.QuestLeadUI.resourcePack(state);assert(html.includes('2 learning tracks.'));assert(!html.includes('3 learning tracks.'));assert.equal((html.match(/class="match-row"/g)||[]).length,2);assert.equal((cart.match(/class="resource-link"/g)||[]).length,2);assert(!html.includes('Speed Up Content Development with AI'));assert(cart.includes(urls.services));assert(html.includes(urls.access));
+assert.deepEqual(S.recommendedMissionIds({missionIds:['interactive','engagement','course-design']}),['interactive','course-design'],'Duplicate products use one recommendation slot');
+for(let mask=1;mask<1<<M.missions.length;mask++){const s={missionIds:M.missions.filter((_,i)=>mask&(1<<i)).map(m=>m.id),painPoints:['accessibility','authoring','staff_time']};assert(S.missionMatches(s).length<=2);assert(S.recommendedMissionIds(s).length<=2)}
+console.log('PASS: all six requested resource URLs; ranked top-two tracks and resources; matching card/cart counts; duplicate-product handling; original selections preserved; every mission combination stays within the limit.');

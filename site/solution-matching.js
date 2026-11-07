@@ -1,17 +1,18 @@
 (function(root){
+const missionProducts={interactive:'creator',accessibility:'access',analytics:'performance',ai:'lumi',outcomes:'achievement',optimization:'optimization','course-design':'services','team-confidence':'services',integrations:'link',engagement:'creator'};
 const solutions=[
 {id:'creator',icon:'✦',name:'Creator+',sub:'Interactive content & course authoring',url:'https://www.d2l.com/brightspace/creator/'},
 {id:'access',icon:'◉',name:'Accessibility+',sub:'Accessible content & inclusive learning',url:'https://www.d2l.com/brightspace/accessibility-plus/'},
-{id:'lumi',icon:'✧',name:'D2L Lumi',sub:'AI-supported teaching & learning',url:'https://www.d2l.com/lumi/'},
-{id:'services',icon:'⌁',name:'Learning Services',sub:'Course design, training & learning strategy',url:'https://www.d2l.com/services-and-support/'},
+{id:'lumi',icon:'✧',name:'D2L Lumi',sub:'AI-supported teaching & learning',url:'https://www.d2l.com/d2l-lumi-move-beyond-ai-experimentation/'},
+{id:'services',icon:'⌁',name:'Learning Services',sub:'Course design, training & learning strategy',url:'https://www.d2l.com/learning-services/'},
 {id:'performance',icon:'↗',name:'Performance+',sub:'Learning analytics & engagement insights',url:'https://www.d2l.com/brightspace/performance/'},
 {id:'achievement',icon:'◎',name:'Achievement+',sub:'Learning outcomes & achievement reporting',url:'https://www.d2l.com/brightspace/achievement/'},
 {id:'link',icon:'⌘',name:'D2L Link',sub:'Brightspace integrations & connected workflows',url:'https://www.d2l.com/brightspace/integrations/'}];
-solutions.push({id:'optimization',icon:'◎',name:'Optimization Services',sub:'Expert platform, administration & analytics support',url:'https://www.d2l.com/services-and-support/optimize/'});
+solutions.push({id:'optimization',icon:'◎',name:'Optimization Services',sub:'Expert platform, administration & analytics support',url:'https://www.d2l.com/make-more-room-for-what-matters/'});
 const demoUrls={creator:'https://d2l.navattic.com/fz2f03jt',access:'https://d2l.navattic.com/lyj033d',performance:'https://d2l.navattic.com/5u1004jo',lumi:'https://d2l.navattic.com/wcu0mde'};for(const solution of solutions)if(demoUrls[solution.id])solution.demoUrl=demoUrls[solution.id];
 const championsSignupUrl='https://d2l.customershome.com/user-request/';
 function match(s){const points=Object.fromEntries(solutions.map(p=>[p.id,0])),reasons={};const add=(id,n,why)=>{points[id]+=n;(reasons[id]??=[]).push(why)};const goals=new Set(s.successMetrics?.length?s.successMetrics:s.successMetric?[s.successMetric]:[]),pain=new Set(s.painPoints||[]),uses=new Set(s.useCases||[]),topics=new Set(s.contentTopics||[]),challenge=s.challengeText||'';
-const missionMap={interactive:'creator',accessibility:'access',analytics:'performance',ai:'lumi',outcomes:'achievement',optimization:'optimization','course-design':'services','team-confidence':'services',integrations:'link',engagement:'creator'},missionIds=s.missionIds?.length?s.missionIds:s.missionId?[s.missionId]:[],selectedProducts=new Set(missionIds.map(id=>missionMap[id]).filter(Boolean)),missionProduct=missionMap[missionIds[0]];for(const id of selectedProducts)add(id,30,'This power-up supports a mission you chose.');
+const missionMap=missionProducts,missionIds=s.missionIds?.length?s.missionIds:s.missionId?[s.missionId]:[],selectedProducts=new Set(missionIds.map(id=>missionMap[id]).filter(Boolean)),missionProduct=missionMap[missionIds[0]];for(const id of selectedProducts)add(id,30,'This power-up supports a mission you chose.');
 if(pain.has('authoring')){add('lumi',6,'You want to reduce manual content creation.');add('creator',3,'You want a more efficient course-authoring workflow.')}
 if(pain.has('engagement'))add('creator',6,'You want more engaging learning content.');
 if(pain.has('accessibility'))add('access',7,'You identified accessibility as a barrier.');
@@ -35,6 +36,7 @@ const owned=new Set(s.existingProducts||[]);return solutions.filter(p=>(!owned.h
 }
 function recommend(s){const list=match(s);return list[0]||{...solutions.find(p=>p.id==='services'),reason:'You already use the options matched to this mission. Explore support for getting more from your existing tools.',allAlreadyUsing:true}}
 function followUp(s){const matches=match(s),selected=new Set(s.products||[]);return solutions.filter(p=>selected.has(p.id)).map(p=>({id:p.id,name:p.name,resourceUrl:p.url,interestType:'selected_by_customer',reason:matches.find(m=>m.id===p.id)?.reason||'You selected this product or service to explore.',formats:s.channels||[],storyTypes:s.storyTypes||[],topics:s.contentTopics||[]}))}
-function missionMatches(s){const all=match(s),map={interactive:'creator',accessibility:'access',analytics:'performance',ai:'lumi',outcomes:'achievement',optimization:'optimization','course-design':'services','team-confidence':'services',integrations:'link',engagement:'creator'},ids=s.missionIds?.length?s.missionIds:s.missionId?[s.missionId]:[];if(!ids.length)return all.slice(0,3);const products=[...new Set(ids.map(id=>map[id]).filter(Boolean))],selected=products.map(id=>all.find(p=>p.id===id)).filter(Boolean),support=all.find(p=>p.id==='optimization'&&!products.includes(p.id));return support?[...selected,support]:selected}
-const api={missionMatches,solutions,championsSignupUrl,match,recommend,followUp};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.QuestSolutions=api;
+function missionMatches(s){const all=match(s),map=missionProducts,ids=s.missionIds?.length?s.missionIds:s.missionId?[s.missionId]:[];if(!ids.length)return all.slice(0,2);const products=[...new Set(ids.map(id=>map[id]).filter(Boolean))],selected=products.map(id=>all.find(p=>p.id===id)).filter(Boolean),support=all.find(p=>p.id==='optimization'&&!products.includes(p.id));return (support?[...selected,support]:selected).sort((a,b)=>b.score-a.score).slice(0,2)}
+function recommendedMissionIds(s){const ids=s.missionIds?.length?s.missionIds:s.missionId?[s.missionId]:[];return missionMatches(s).map(p=>ids.find(id=>missionProducts[id]===p.id)||Object.keys(missionProducts).find(id=>missionProducts[id]===p.id)).filter(Boolean)}
+const api={recommendedMissionIds,missionMatches,solutions,championsSignupUrl,match,recommend,followUp};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.QuestSolutions=api;
 })(typeof window!=='undefined'?window:globalThis);
