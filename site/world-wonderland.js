@@ -36,7 +36,7 @@ P.drawLabels=function(){
  const paint=(name,box,self=false)=>{c.fillStyle=self?'#252525':'#fffdf4ed';c.strokeStyle=self?'#252525':'#ccd6c2';c.lineWidth=.8;c.beginPath();c.roundRect(box.x,box.y,box.w,box.h,7);c.fill();c.stroke();this.text(name,box.x+box.w/2,box.y+15,10,self?'#fff8eb':'#4c6251')};
  this.labelBoxes=this.labelBoxes||[];c.save();c.font='600 10px DM Sans, Arial';
  for(const item of names.sort((a,b)=>(b.self?2:b.focused?1:0)-(a.self?2:a.focused?1:0)||String(a.id).localeCompare(String(b.id)))){
-  if(!item.self&&!item.focused&&this.scale<.4)continue;const at=screen(item.point),width=c.measureText(item.name).width+16;
+  const at=screen(item.point),width=c.measureText(item.name).width+16;
   const box={x:at.x-width/2,y:at.y-20,w:width,h:22};if(at.x<0||at.x>this.w||at.y<0||at.y>this.h)continue;
   if(!item.self&&(this.labelBoxes.some(b=>overlaps(box,b))||bodies.some(b=>b.id!==item.id&&overlaps(box,b,0))))continue;
   paint(item.name,box,item.self);this.labelBoxes.push(box);
