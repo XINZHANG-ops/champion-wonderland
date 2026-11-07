@@ -39,5 +39,12 @@ const context={console,document:doc,QuestRecords:{ready:()=>true,subscribe(){},s
  await run("select('he');nextQuest()");assert.equal(context.lastWorld.role,'Learning Explorer');
  await run("select('0');select('2');select('8');select('0');nextQuest()");assert.equal(run('selectedMissions().length'),2);assert(html.includes('2 learning tracks selected'));
  run("state.step=2;state.organization='D2L';select('hq')");await run('nextQuest()');assert.equal(context.lastWorld.role,'D2L Team');assert.equal(context.lastProgress.isSample,true);
+ let accept,handOffs=0;
+ context.QuestSubmitQueue={prepare(){},preparing:()=>false,warm(){},build:()=>true,deliver(){handOffs++;return new Promise(resolve=>accept=resolve)}};
+ run("state=newQuestState();state.step=5;state.role='educator';state.industry='he'");
+ const handoff=run('nextQuest()');
+ assert.equal(run('state.step'),6);assert(!run('state.complete'));assert(html.includes('Saving…'));assert(html.includes('Join D2L Champions'));
+ await run('nextQuest()');assert.equal(handOffs,1);
+ accept();await handoff;assert(run('state.complete'));assert(html.includes('Mission complete.'));
  console.log('PASS: one challenge question, fourteen unlimited formats, explicit submit-to-save, error recovery, no duplicate save, receipt-gated automatic card handoff and CTA-only completion.');
 })().catch(e=>{console.error(e);process.exitCode=1});

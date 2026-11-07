@@ -65,3 +65,9 @@ The match card recommends at most two learning tracks and two distinct products/
 ## Segment-specific one-question flow
 
 Each segment has its own challenge wording in `site/challenge-catalog.js`, using stable IDs for the existing matching rules. Every track asks only “Explore your challenges” (up to five). Learning formats contain the fourteen requested options with no selection cap. The submit button saves the answer snapshot and waits for the card queue handoff before opening the completion page. Completion shows the Champions CTA, with recovery controls only if something actually fails. Repeated summary, queue status and card-preview blocks are removed. Private questionnaire routes and the Google schema are unchanged.
+
+### Background submission
+
+Update Lucy’s existing Apps Script web app to the generated Code.txt (a new version of the same deployment). It uses her existing private card outbox and sendQueuedCards trigger. The frontend detects support using an anonymous capability request. With the previous receiver it continues to use the existing Form and card flow.
+
+On Submit the browser posts once directly to Google. The final page opens immediately. Completion requires a durable queue receipt. A pending request is kept only in the submitting tab's session storage for refresh recovery and removed on confirmation; restored requests expire after 15 minutes. The Google worker writes the Form response before sending the card. Delivery can be delayed by mail quota. The game VM receives neither the questionnaire nor the card.

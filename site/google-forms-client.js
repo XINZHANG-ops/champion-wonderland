@@ -57,3 +57,66 @@
   }
   window.QuestGoogleForms = {submit};
 })();
+
+// A single close-tolerant upload hands the final answers and portrait to Lucy's Google outbox.
+(function(root){
+ const storageKey='cw-pending-google-submit-v1',budget=62*1024;
+ let available=false,probe,portraitKey,portrait,making=false,job;
+ function receipt(id,capability=false){
+  return new Promise(resolve=>{
+   const cb='cwReceipt_'+crypto.randomUUID().replaceAll('-',''),script=document.createElement('script');
+   const url=new URL(root.QUEST_CONFIG.formsEndpoint);
+   url.searchParams.set(capability?'receipt':'queueReceipt',id);url.searchParams.set('origin',location.origin);url.searchParams.set('callback',cb);
+   function finish(result){clearTimeout(timer);script.remove();delete root[cb];resolve(result);}
+   const timer=setTimeout(()=>finish(null),6500);
+   root[cb]=r=>finish(capability ? (r?.submissionId===id&&r.type==='champion-forms-result'?r:null) : (r?.type==='champion-submit-v1'&&r.id===id?r:null));
+   script.onerror=()=>finish(null);script.src=url.href;document.body.append(script);
+  });
+ }
+ function warm(){
+  if(!probe&&root.QuestPrivateFormsClient?.ready()&&typeof Request!=='undefined'&&'keepalive' in Request.prototype){
+   probe=receipt(crypto.randomUUID(),true).then(r=>{available=r?.queueEnabled===true;if(!r)probe=null;});
+  }
+ }
+ function prepare(world,avatar,sample){
+  const key=JSON.stringify([world,avatar,sample]);
+  if(key===portraitKey)return;
+  portraitKey=key;portrait=null;making=!sample;
+  if(sample){portrait='';return;}
+  const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=640;
+  root.QuestCardArt.draw(canvas,avatar,world).then(()=>{
+   if(key!==portraitKey)return;
+   for(const quality of [.82,.66,.5,.36,.24]){
+    const jpeg=canvas.toDataURL('image/jpeg',quality);
+    if(jpeg.startsWith('data:image/jpeg;base64,')&&jpeg.length<=47000){portrait=jpeg;break;}
+   }
+  }).catch(()=>{}).finally(()=>{if(key===portraitKey){making=false;root.dispatchEvent(new Event('cw-portrait-ready'));}});
+ }
+ function backup(){try{if(job)sessionStorage.setItem(storageKey,JSON.stringify(job));else sessionStorage.removeItem(storageKey);}catch{}}
+ function restore(){try{const j=JSON.parse(sessionStorage.getItem(storageKey));if(j?.body&&j.endpoint===root.QUEST_CONFIG?.formsEndpoint&&Date.now()-j.at<15*60*1000){job=j;return true;}sessionStorage.removeItem(storageKey);}catch{}return false;}
+ function build(record,avatar){
+  if(!available)return false;
+  prepare(record.industryId,avatar,!!(record.demo||record.isSample||record.staffTestMode));
+  if(portrait===null)return false;
+  const id=crypto.randomUUID(),body=JSON.stringify({action:'enqueue',returnOrigin:location.origin,submissionId:id,record,portrait});
+  if(new Blob([body]).size>budget)return false;
+  job={id,body,endpoint:root.QUEST_CONFIG.formsEndpoint,at:Date.now()};backup();return true;
+ }
+ async function deliver(){
+  const pending=job,endpoint=root.QUEST_CONFIG?.formsEndpoint;
+  if(!pending||!root.QuestPrivateFormsClient.ready())throw Error('Saving is unavailable.');
+  // Start synchronously during the click. An opaque HTTP response cannot prove acceptance.
+  const upload=fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:pending.body,
+   credentials:'omit',mode:'no-cors',referrerPolicy:'no-referrer',keepalive:true}).then(()=>true,()=>false);
+  await Promise.race([upload,new Promise(r=>setTimeout(r,900))]);
+  for(const delay of [0,900,1600,3000,5000,7000]){
+   if(delay)await new Promise(r=>setTimeout(r,delay));
+   const reply=await receipt(pending.id);
+   if(['accepted','queued','sent','sending','uncertain'].includes(reply?.status)){
+    if(job===pending){job=null;backup();}return;
+   }
+  }
+  throw Error('We couldn’t confirm your submission. Retry to check or send the same submission again.');
+ }
+ root.QuestSubmitQueue={warm,prepare,build,deliver,restore,preparing:()=>available&&making,clear(){job=null;backup();}};
+})(window);
