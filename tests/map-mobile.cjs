@@ -1,0 +1,32 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const root=path.join(__dirname,'../site'),D=require(path.join(root,'world-data.js'));
+const listeners=new Map(),captures=new Set(),windowEvents=new Map(),walks=[],painted=[],buffers=[];
+let rect={left:0,top:0,width:1024,height:768},width=0,height=0,bitmapResets=0;
+function context(){return new Proxy({setTransform(){},measureText:t=>({width:String(t).length*6}),fillText:(name,x,y)=>painted.push({name,x,y})},{get:(object,key)=>key in object?object[key]:()=>{}})}
+const ctx=context(),canvas={getContext:()=>ctx,getBoundingClientRect:()=>({...rect,right:rect.left+rect.width,bottom:rect.top+rect.height}),addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name),setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture:id=>captures.delete(id),classList:{add(){},remove(){}}};
+Object.defineProperties(canvas,{width:{get:()=>width,set:v=>{width=v;bitmapResets++}},height:{get:()=>height,set:v=>{height=v;bitmapResets++}}});
+const sandbox={QuestWorldData:D,QuestEnvironment:{},devicePixelRatio:2,performance:{now:()=>100},matchMedia:()=>({matches:false}),ResizeObserver:class{observe(){}disconnect(){}},requestAnimationFrame:()=>1,cancelAnimationFrame(){},addEventListener:(n,f)=>windowEvents.set(n,f),removeEventListener:n=>windowEvents.delete(n),OffscreenCanvas:class{constructor(w,h){this.width=w;this.height=h;buffers.push(this)}getContext(){return context()}}};
+sandbox.window=sandbox;vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(process.env.BASELINE_RENDERER||path.join(root,'world-renderer.js'),'utf8'),sandbox);
+const r=new sandbox.QuestWorldRenderer(canvas,{onWalk:p=>walks.push(p)});
+const initialResets=bitmapResets;r.resize();r.applyResize();assert.equal(bitmapResets,initialResets,'An identical size notification must not clear the visible map');
+const terrain={};r.groundLayer=terrain;rect.height=700;r.resize();assert.equal(bitmapResets,initialResets,'A resize must wait until the repaint frame');r.applyResize();assert.equal(bitmapResets,initialResets+1);assert.equal(r.groundLayer,terrain,'Viewport changes must preserve the static terrain cache');
+r.groundLayer=null;let terrainPaints=0;r.paintGround=()=>terrainPaints++;r.drawGround();r.drawGround();assert.equal(terrainPaints,1);assert(buffers.every(b=>b.width<=2048&&b.height<=2048),'Mobile terrain buffers stay within the memory budget');
+rect.width=390;rect.height=700;r.resize();r.applyResize();r.drawGround();assert.equal(terrainPaints,1);
+r.zoomBy(100);assert.equal(r.zoom,10);r.zoomBy(.0001);assert.equal(r.zoom,1);
+r.zoomBy(2);const anchor={x:190,y:240},before=r.groundPoint(anchor.x,anchor.y);r.zoomBy(1.7,anchor);const after=r.groundPoint(anchor.x,anchor.y);assert(Math.hypot(before.x-after.x,before.y-after.y)<1e-8,'Zoom keeps the selected map point under the fingers');
+function event(type,extra={}){listeners.get(type)({pointerId:1,pointerType:'touch',button:0,clientX:150,clientY:300,preventDefault(){},...extra})}
+r.fitGrounds();r.zoomBy(2);const pinchBefore=r.groundPoint(195,300);
+event('pointerdown');event('pointerdown',{pointerId:2,clientX:240});event('pointermove',{pointerId:2,clientX:330});assert(Math.abs(r.zoom-4)<1e-8);const pinchAfter=r.groundPoint(240,300);assert(Math.hypot(pinchAfter.x-pinchBefore.x,pinchAfter.y-pinchBefore.y)<1e-8,'Pinch midpoint translation and zoom stay attached to the same ground point');
+event('pointerup',{pointerId:2,clientX:330});const ox=r.ox;event('pointermove',{clientX:180});assert(Math.abs(r.ox-ox-30)<1e-8,'Lifting one finger continues panning without a jump');event('pointerup',{clientX:180});assert.equal(walks.length,0,'Pinch and its final finger release never issue a walk');assert.equal(captures.size,0);
+event('pointerdown');event('pointerup');assert.equal(walks.length,1,'A normal tap still walks');
+event('pointerdown');event('pointerdown',{pointerId:2,clientX:240});event('pointercancel');event('pointerup',{pointerId:2,clientX:240});assert.equal(walks.length,1,'Cancelled multi-touch never becomes a tap');
+event('pointerdown');windowEvents.get('blur')();assert.equal(captures.size,0);
+const dragResets=bitmapResets;event('pointerdown');for(let i=1;i<=80;i++){event('pointermove',{clientX:150+i,clientY:300+i*.2});r.resize();r.applyResize()}event('pointerup',{clientX:230,clientY:316});assert.equal(bitmapResets,dragResets,'A long drag interleaved with repeated size notifications never clears the map');assert.equal(terrainPaints,1);
+vm.runInContext(fs.readFileSync(path.join(root,'world-wonderland.js'),'utf8'),sandbox);
+r.w=390;r.h=800;r.ox=195;r.oy=300;r.scale=1;r.zoom=5;r.renderTime=100;r.players=[{id:'me',x:0,y:0,avatar:{},moving:false}];r.self='me';r.labelBoxes=[];r.playerLabels=[{id:'me',name:'My moose · you',self:true,point:[0,-112]}];r.labels=[{name:'BLOCKED BUILDING',point:[0,-50]},{name:'CITY HALL',point:[130,-100]}];painted.length=0;r.drawLabels();
+assert(painted.some(p=>p.name==='My moose · you'));assert(!painted.some(p=>p.name==='BLOCKED BUILDING'),'Map names cannot cover the avatar');const fixed=painted.find(p=>p.name==='CITY HALL');assert(fixed);assert.equal(fixed.x,325,'A badge stays anchored rather than being moved into a stack');
+r.players=[];r.labelBoxes=[];r.zoom=1;r.playerLabels=[];r.labels=Array.from({length:9},(_,i)=>({name:'UNIVERSITY '+i,point:[0,-240+i*65]}));painted.length=0;r.drawLabels();assert(painted.length>0&&painted.length<=3,'The phone overview shows only a few landmarks');
+r.destroy();assert.equal(listeners.size,0);assert.equal(windowEvents.size,0);
+console.log('PASS: atomic canvas resize, unchanged-size guard, persistent bounded terrain cache, 10x zoom, anchored pinch, pinch-to-pan handoff, no accidental walks, avatar-safe fixed labels and a quiet phone overview.');

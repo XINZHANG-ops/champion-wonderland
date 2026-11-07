@@ -2,34 +2,44 @@
 'use strict';const D=window.QuestWorldData;
 function shade(hex,amount){const n=parseInt(hex.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+amount)).toString(16).padStart(2,'0')).join('')}
 class WorldRenderer{
- constructor(canvas,{world='he',preview=false,onWalk=()=>{}}={}){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.world=world;this.preview=preview;this.players=[];this.positions=new Map();this.self=null;this.onWalk=onWalk;this.running=true;this.zoom=1;this.camera={x:D.arena.size/2,y:D.arena.size/2};this.clock=()=>Date.now();this.motion=!matchMedia('(prefers-reduced-motion: reduce)').matches;this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(canvas);this.handleClick=e=>{if(this.preview)return;const point=this.groundPoint(e.clientX,e.clientY);if(point.x>=D.arena.min&&point.x<=D.arena.max&&point.y>=D.arena.min&&point.y<=D.arena.max){this.marker={...point,at:performance.now()};this.onWalk(point)}};this.installMapControls();this.handleWheel=e=>{if(e.ctrlKey)return;e.preventDefault();const r=canvas.getBoundingClientRect();this.zoomBy(e.deltaY<0?1.15:1/1.15,{x:e.clientX-r.left,y:e.clientY-r.top})};canvas.addEventListener('wheel',this.handleWheel,{passive:false});this.resize();this.frame=t=>{if(!this.running)return;if(!this.lastFrame||t-this.lastFrame>=16){this.draw(t);this.lastFrame=t}this.raf=requestAnimationFrame(this.frame)};this.raf=requestAnimationFrame(this.frame)}
- resize(){const r=this.canvas.getBoundingClientRect();this.w=r.width;this.h=r.height;const d=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*d);this.canvas.height=Math.round(r.height*d);this.ctx.setTransform(d,0,0,d,0,0);this.baseScale=Math.min(this.w/(52*D.arena.size+130),this.h/(26*D.arena.size+230));this.updateCamera();this.groundLayer=null}
+ constructor(canvas,{world='he',preview=false,onWalk=()=>{}}={}){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.world=world;this.preview=preview;this.players=[];this.positions=new Map();this.self=null;this.onWalk=onWalk;this.running=true;this.zoom=1;this.camera={x:D.arena.size/2,y:D.arena.size/2};this.clock=()=>Date.now();this.motion=!matchMedia('(prefers-reduced-motion: reduce)').matches;this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(canvas);this.handleClick=e=>{if(this.preview)return;const point=this.groundPoint(e.clientX,e.clientY);if(point.x>=D.arena.min&&point.x<=D.arena.max&&point.y>=D.arena.min&&point.y<=D.arena.max){this.marker={...point,at:performance.now()};this.onWalk(point)}};this.installMapControls();this.handleWheel=e=>{if(e.ctrlKey)return;e.preventDefault();const r=canvas.getBoundingClientRect();this.zoomBy(e.deltaY<0?1.15:1/1.15,{x:e.clientX-r.left,y:e.clientY-r.top})};canvas.addEventListener('wheel',this.handleWheel,{passive:false});this.resize();this.frame=t=>{if(!this.running)return;if(!this.lastFrame||t-this.lastFrame>=16){this.draw(t);this.lastFrame=t}this.raf=requestAnimationFrame(this.frame)};this.raf=requestAnimationFrame(this.frame)}
+ resize(){const r=this.canvas.getBoundingClientRect();if(!r.width||!r.height)return;const d=Math.min(devicePixelRatio||1,2);this.pendingSize={w:r.width,h:r.height,d,width:Math.round(r.width*d),height:Math.round(r.height*d)};if(!this.w)this.applyResize()}
+ applyResize(){const size=this.pendingSize;if(!size)return;this.pendingSize=null;if(this.w===size.w&&this.h===size.h&&this.pixelRatio===size.d)return;this.w=size.w;this.h=size.h;this.pixelRatio=size.d;
+  // Resizing clears the bitmap. Apply it only at the start of the frame that repaints it.
+  if(this.canvas.width!==size.width)this.canvas.width=size.width;if(this.canvas.height!==size.height)this.canvas.height=size.height;
+  this.ctx.setTransform(size.d,0,0,size.d,0,0);this.baseScale=Math.min(this.w/(52*D.arena.size+130),this.h/(26*D.arena.size+230));this.updateCamera()
+ }
  destroy(){this.running=false;cancelAnimationFrame(this.raf);this.resizeObserver.disconnect();this.cancelMapGesture();for(const [event,handler]of Object.entries(this.mapControls))this.canvas.removeEventListener(event,handler);window.removeEventListener?.('blur',this.cancelMapGesture);this.canvas.removeEventListener('wheel',this.handleWheel)}
  installMapControls(){
-  const canvas=this.canvas,pointers=new Set();let gesture=null;
+  const canvas=this.canvas,pointers=new Map();let gesture=null,pinch=null;
+  const point=event=>({x:event.clientX,y:event.clientY,mouse:!event.pointerType||event.pointerType==='mouse'});
+  const pair=()=>{const [a,b]=[...pointers.values()];return {x:(a.x+b.x)/2,y:(a.y+b.y)/2,distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))}};
   const finish=(event,cancelled=false)=>{
-   pointers.delete(event.pointerId);if(!gesture||gesture.id!==event.pointerId)return;
-   const current=gesture;gesture=null;canvas.classList?.remove('is-panning');
+   if(!pointers.has(event.pointerId))return;pointers.delete(event.pointerId);
+   const current=gesture,wasPinching=!!pinch;pinch=null;
    if(canvas.hasPointerCapture?.(event.pointerId))canvas.releasePointerCapture(event.pointerId);
-   if(cancelled||current.cancelled||current.dragged||current.mouseButton===2||this.preview)return;
+   if(pointers.size){const [id,p]=pointers.entries().next().value;gesture={id,x:p.x,y:p.y,lastX:p.x,lastY:p.y,pan:!p.mouse,dragged:true,tap:false};return}
+   gesture=null;canvas.classList?.remove('is-panning');
+   if(cancelled||wasPinching||!current?.tap||current.dragged||current.mouseButton===2||this.preview)return;
    const rect=canvas.getBoundingClientRect();if(event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom)this.handleClick(event);
   };
   this.mapControls={
    pointerdown:event=>{
-    const mouse=!event.pointerType||event.pointerType==='mouse';if(mouse&&event.button!==0&&event.button!==2)return;
-    if(mouse&&event.button===0&&this.preview)return;
-    pointers.add(event.pointerId);if(pointers.size>1){if(gesture)gesture.cancelled=true;event.preventDefault();return}
-    gesture={id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,pan:!mouse||event.button===2,mouseButton:mouse?event.button:null,dragged:false,cancelled:false};
-    canvas.setPointerCapture?.(event.pointerId);if(gesture.pan)event.preventDefault();
+    const p=point(event);if(p.mouse&&event.button!==0&&event.button!==2)return;if(p.mouse&&event.button===0&&this.preview)return;
+    pointers.set(event.pointerId,p);canvas.setPointerCapture?.(event.pointerId);
+    if(pointers.size>1){if(gesture){gesture.tap=false;gesture.dragged=true}if(pointers.size===2&&[...pointers.values()].every(p=>!p.mouse))pinch=pair();event.preventDefault();return}
+    gesture={id:event.pointerId,x:p.x,y:p.y,lastX:p.x,lastY:p.y,pan:!p.mouse||event.button===2,mouseButton:p.mouse?event.button:null,dragged:false,tap:true};if(gesture.pan)event.preventDefault();
    },
    pointermove:event=>{
-    if(!gesture||gesture.id!==event.pointerId||gesture.cancelled)return;
+    if(!pointers.has(event.pointerId))return;pointers.set(event.pointerId,point(event));
+    if(pinch&&pointers.size===2){event.preventDefault();const next=pair(),rect=canvas.getBoundingClientRect();this.zoomBy(next.distance/pinch.distance,{x:pinch.x-rect.left,y:pinch.y-rect.top});this.panBy(next.x-pinch.x,next.y-pinch.y);pinch=next;return}
+    if(!gesture||gesture.id!==event.pointerId||pointers.size>1)return;
     if(!gesture.dragged&&Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>7)gesture.dragged=true;
     if(gesture.dragged&&gesture.pan){event.preventDefault();if(this.zoom>1){this.panBy(event.clientX-gesture.lastX,event.clientY-gesture.lastY);canvas.classList?.add('is-panning')}gesture.lastX=event.clientX;gesture.lastY=event.clientY}
    },
    pointerup:event=>finish(event),pointercancel:event=>finish(event,true),lostpointercapture:event=>finish(event,true),contextmenu:event=>event.preventDefault()
   };
-  this.cancelMapGesture=()=>{if(gesture)finish({pointerId:gesture.id},true);pointers.clear()};
+  this.cancelMapGesture=()=>{gesture=null;pinch=null;for(const id of [...pointers.keys()]){pointers.delete(id);if(canvas.hasPointerCapture?.(id))canvas.releasePointerCapture(id)}canvas.classList?.remove('is-panning')};
   for(const [event,handler]of Object.entries(this.mapControls))canvas.addEventListener(event,handler);
   window.addEventListener('blur',this.cancelMapGesture);
  }
@@ -39,7 +49,7 @@ class WorldRenderer{
   this.updateCamera();
  }
  updateCamera(){this.scale=this.baseScale*this.zoom;const q=this.p(this.camera.x,this.camera.y);this.ox=this.w/2-q[0]*this.scale;this.oy=this.h/2+40*this.baseScale-q[1]*this.scale}
- zoomBy(factor,anchor){this.focusId=null;const before=this.scale,point=anchor||{x:this.w/2,y:this.h/2},lx=(point.x-this.ox)/before,ly=(point.y-this.oy)/before;this.zoom=Math.max(1,Math.min(3,this.zoom*factor));this.scale=this.baseScale*this.zoom;this.ox=point.x-lx*this.scale;this.oy=point.y-ly*this.scale;const cx=(this.w/2-this.ox)/this.scale,cy=(this.h/2+40*this.baseScale-this.oy)/this.scale;this.camera={x:(cy/13+cx/26)/2,y:(cy/13-cx/26)/2}}
+ zoomBy(factor,anchor){this.focusId=null;const before=this.scale,point=anchor||{x:this.w/2,y:this.h/2},lx=(point.x-this.ox)/before,ly=(point.y-this.oy)/before;this.zoom=Math.max(1,Math.min(10,this.zoom*factor));this.scale=this.baseScale*this.zoom;this.ox=point.x-lx*this.scale;this.oy=point.y-ly*this.scale;const cx=(this.w/2-this.ox)/this.scale,cy=(this.h/2+40*this.baseScale-this.oy)/this.scale;this.camera={x:(cy/13+cx/26)/2,y:(cy/13-cx/26)/2}}
  fitGrounds(){this.focusId=null;this.zoom=1;this.camera={x:D.arena.size/2,y:D.arena.size/2};this.updateCamera()}
  focusPlayer(id){const player=this.players.find(p=>p.id===id);if(!player)return false;this.focusId=id;this.camera={x:player.x,y:player.y};this.zoom=3;this.updateCamera();return true}
  findMe(){if(this.focusPlayer(this.self)){this.zoom=2;this.updateCamera();return}const z=D.zones[this.world];this.camera={x:z.x+z.w/2,y:z.y+z.h/2};this.zoom=2;this.updateCamera()}
@@ -83,9 +93,12 @@ class WorldRenderer{
  sandbox(){this.cube(3.8,11,2,1.8,5,'#c5a16f');this.cube(3.96,11.16,1.68,1.48,1,'#f1dbaa',5);this.cube(4.3,11.5,.4,.4,10,'#d99e83',6);this.cube(5,11.6,.35,.35,7,'#93b6b0',6);this.cube(4.8,12,.3,.3,6,'#b0a1c2',6);this.label('SANDBOX',4.8,12.9,-18)}
  storyGarden(){for(let i=0;i<5;i++){const a=i/5*Math.PI*2;this.cube(11.1+Math.cos(a)*.9,11.8+Math.sin(a)*.9,.35,.35,10,['#dca28b','#c5b47e','#aabf8c','#8eb3ad','#b5a3bc'][i])}this.cube(10.85,11.55,.8,.65,8,'#d5c39a');this.label('STORY CIRCLE',11.5,13.4,-8)}
 
- drawGround(){const main=this.ctx;let cached=this.groundLayer;if(!cached&&typeof OffscreenCanvas!=='undefined'){cached=new OffscreenCanvas(52*D.arena.size+160,26*D.arena.size+230);this.groundLayer=cached;const c=cached.getContext('2d');c.translate((52*D.arena.size+160)/2,130);this.ctx=c;this.paintGround();this.ctx=main}if(cached)main.drawImage(cached,-(52*D.arena.size+160)/2,-130);else this.paintGround()}
+ drawGround(){const main=this.ctx,width=52*D.arena.size+160,height=26*D.arena.size+230;let cached=this.groundLayer;
+  if(!cached){const density=Math.min(1,2048/width,2048/height);try{cached=typeof OffscreenCanvas==='function'?new OffscreenCanvas(Math.ceil(width*density),Math.ceil(height*density)):typeof document!=='undefined'?document.createElement('canvas'):null;if(cached){cached.width=Math.ceil(width*density);cached.height=Math.ceil(height*density);const c=cached.getContext('2d');if(!c)cached=null;else{c.scale(density,density);c.translate(width/2,130);this.ctx=c;this.paintGround();this.groundLayer=cached}}}catch{cached=null}finally{this.ctx=main}}
+  if(cached)main.drawImage(cached,-width/2,-130,width,height);else this.paintGround()
+ }
  paintGround(){const c=this.ctx,w=this.season||D.commonGround,n=D.arena.size;c.fillStyle='#49604410';c.beginPath();c.ellipse(0,n*26+34,n*18,40,0,0,Math.PI*2);c.fill();this.shape([[0,n,0],[n,n,0],[n,n,-24],[n*.75,n,-66],[n*.5,n,-82],[0,n,-30]],'#b4a58c');this.shape([[n,0,0],[n,n,0],[n,n,-24],[n,n*.75,-60],[n,n*.375,-80],[n,0,-30]],'#a69984');for(let y=0;y<n;y++)for(let x=0;x<n;x++){const v=(x*7+y*13)%5;this.shape([[x,y,0],[x+1,y,0],[x+1,y+1,0],[x,y+1,0]],D.isPath(x,y)?shade(w.path,(v-2)*2):shade(QuestEnvironment.blend(D.zones[D.districtAt(x,y)]?.color||w.ground,w.ground,.8),Math.round(Math.sin(x*.31)*Math.cos(y*.24)*9)+(v-2)*2));if(D.isPath(x,y)){if((x+y)%3===0)this.line(this.p(x+.12,y+.9,.2),this.p(x+.88,y+.9,.2),'#c4bca447',.8)}else if(D.walkable(x,y)&&(x*11+y*7)%3!==0){const p=this.p(x+.45,y+.5,.3);c.strokeStyle=QuestEnvironment.blend(w.foliage||'#3c9f5a',w.ground,((x+y)%4)*.12);c.lineWidth=1;for(let i=-1;i<=1;i++){c.beginPath();c.moveTo(p[0]+i*3,p[1]);c.lineTo(p[0]+i*4,p[1]-4-((x*7+y*3+i+4)%4));c.stroke()}}}}
- draw(time){if(!this.w||!this.h)return;const followed=this.players.find(p=>p.id===this.focusId);if(followed){const pos=this.positionFor(followed,time);this.camera={x:pos.x,y:pos.y};this.updateCamera()}this.now=this.clock();this.season=QuestEnvironment.garden();this.labels=[];this.labelBoxes=[];if(this.groundStamp!==this.season.stamp){this.groundLayer=null;this.groundStamp=this.season.stamp}const c=this.ctx,w=this.season;c.clearRect(0,0,this.w,this.h);c.fillStyle=w.sky;c.fillRect(0,0,this.w,this.h);const glow=c.createRadialGradient(this.w*.5,this.h*.35,10,this.w*.5,this.h*.35,this.w*.6);glow.addColorStop(0,'#fffdf299');glow.addColorStop(1,w.sky);c.fillStyle=glow;c.fillRect(0,0,this.w,this.h);this.drawBackdrop?.();c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);this.drawGround();
+ draw(time){this.renderTime=time;this.applyResize();if(!this.w||!this.h)return;const followed=this.players.find(p=>p.id===this.focusId);if(followed){const pos=this.positionFor(followed,time);this.camera={x:pos.x,y:pos.y};this.updateCamera()}this.now=this.clock();this.season=QuestEnvironment.garden();this.labels=[];this.playerLabels=[];this.labelBoxes=[];if(this.groundStamp!==this.season.stamp){this.groundLayer=null;this.groundStamp=this.season.stamp}const c=this.ctx,w=this.season;c.fillStyle=w.sky;c.fillRect(0,0,this.w,this.h);const glow=c.createRadialGradient(this.w*.5,this.h*.35,10,this.w*.5,this.h*.35,this.w*.6);glow.addColorStop(0,'#fffdf299');glow.addColorStop(1,w.sky);c.fillStyle=glow;c.fillRect(0,0,this.w,this.h);this.drawBackdrop?.();c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);this.drawGround();
  const entities=[];const add=(depth,fn)=>entities.push({depth,fn});this.districtEntities(time,add);
  this.sceneryEntities(time,add);
  add(83,()=>{this.cube(43,31,7.5,11,3,'#e5d8b9');this.bench(44,32);this.bench(49,40);this.flowers(49,32,this.season.flower);this.label('D2L CHAMPION WONDERLAND',46.5,36.5,43)});

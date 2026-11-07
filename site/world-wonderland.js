@@ -27,5 +27,28 @@ P.sceneryEntities=function(time,add){D.scenery.trees.forEach(([x,y,s],i)=>add(x+
 
 // Collect world anchors, then render readable badges in screen pixels, independent of zoom.
 P.label=function(name,x,y,z=0){if(!this.labels)this.labels=[];this.labels.push({name,point:this.p(x,y,z)})};
-P.drawLabels=function(){const c=this.ctx,items=this.labels?.splice(0)||[],priority=name=>/WONDERLAND|^Hi!$|^Hey!$|^Hello!$/.test(name)?5:/UNIVERSITY|RESEARCH LIBRARY|CITY HALL|D2L HQ|THE PLAYGROUND|TRAINING HUB/.test(name)?4:/LIBRARY|SLIDE|SWING|INNOVATION/.test(name)?3:1;this.labelBoxes=this.labelBoxes||[];c.save();c.font='600 11px DM Sans, Arial';for(const item of items.sort((a,b)=>priority(b.name)-priority(a.name))){const x=this.ox+item.point[0]*this.scale,y=this.oy+item.point[1]*this.scale;if(x<0||x>this.w||y<-25||y>this.h+25)continue;const width=c.measureText(item.name).width+18,height=24;let box;for(const [dx,dy]of[[0,0],[0,-27],[0,27],[-35,-27],[35,-27],[0,-54]]){const trial={x:Math.max(8,Math.min(this.w-width-8,x-width/2+dx)),y:Math.max(8,Math.min(this.h-height-8,y-16+dy)),w:width,h:height};if(!this.labelBoxes.some(b=>trial.x<b.x+b.w+4&&trial.x+trial.w+4>b.x&&trial.y<b.y+b.h+4&&trial.y+trial.h+4>b.y)){box=trial;break}}if(!box)continue;this.labelBoxes.push(box);if(Math.abs(box.y+16-y)>10)this.line([x,y],[box.x+box.w/2,box.y+height],'#83937b88',1);c.fillStyle='#fffdf4f2';c.strokeStyle='#ccd6c2';c.lineWidth=.8;c.beginPath();c.roundRect(box.x,box.y,box.w,box.h,7);c.fill();c.stroke();this.text(item.name,box.x+box.w/2,box.y+16,11,'#4c6251')}c.restore()};
+P.drawLabels=function(){
+ const c=this.ctx,items=this.labels?.splice(0)||[],names=this.playerLabels?.splice(0)||[],mobile=this.w<720;
+ const overlaps=(a,b,pad=4)=>a.x<b.x+b.w+pad&&a.x+a.w+pad>b.x&&a.y<b.y+b.h+pad&&a.y+a.h+pad>b.y;
+ const screen=point=>({x:this.ox+point[0]*this.scale,y:this.oy+point[1]*this.scale});
+ const bodies=this.players.map(p=>{const position=this.positionFor(p,this.renderTime||0),at=screen(this.p(position.x,position.y)),size=this.scale*(p.avatar?.bodyScale||1);return {id:p.id,x:at.x-56*size-8,y:at.y-140*size-8,w:112*size+16,h:155*size+16}});
+ const priority=name=>/WONDERLAND/.test(name)?5:/UNIVERSITY|RESEARCH LIBRARY|CITY HALL|D2L HQ|THE PLAYGROUND|TRAINING HUB/.test(name)?4:/LIBRARY|SLIDE|SWING|INNOVATION/.test(name)?3:1;
+ const paint=(name,box,self=false)=>{c.fillStyle=self?'#252525':'#fffdf4ed';c.strokeStyle=self?'#252525':'#ccd6c2';c.lineWidth=.8;c.beginPath();c.roundRect(box.x,box.y,box.w,box.h,7);c.fill();c.stroke();this.text(name,box.x+box.w/2,box.y+15,10,self?'#fff8eb':'#4c6251')};
+ this.labelBoxes=this.labelBoxes||[];c.save();c.font='600 10px DM Sans, Arial';
+ for(const item of names.sort((a,b)=>(b.self?2:b.focused?1:0)-(a.self?2:a.focused?1:0)||String(a.id).localeCompare(String(b.id)))){
+  if(!item.self&&!item.focused&&this.scale<.4)continue;const at=screen(item.point),width=c.measureText(item.name).width+16;
+  const box={x:at.x-width/2,y:at.y-20,w:width,h:22};if(at.x<0||at.x>this.w||at.y<0||at.y>this.h)continue;
+  if(!item.self&&(this.labelBoxes.some(b=>overlaps(box,b))||bodies.some(b=>b.id!==item.id&&overlaps(box,b,0))))continue;
+  paint(item.name,box,item.self);this.labelBoxes.push(box);
+ }
+ const limit=this.zoom<2?(mobile?3:6):this.zoom<5?(mobile?5:10):(mobile?8:16);let count=0;
+ for(const item of items.sort((a,b)=>priority(b.name)-priority(a.name))){
+  if(count>=limit)break;if(this.zoom<2&&priority(item.name)<4)continue;
+  const at=screen(item.point),width=c.measureText(item.name).width+16,box={x:at.x-width/2,y:at.y-16,w:width,h:22};
+  // Keep badges at their landmark; omit a blocked label instead of stacking it over a visitor.
+  if(box.x<8||box.x+width>this.w-8||box.y<8||box.y+box.h>this.h-8||this.labelBoxes.some(b=>overlaps(box,b))||bodies.some(b=>overlaps(box,b)))continue;
+  paint(item.name,box);this.labelBoxes.push(box);count++;
+ }
+ c.restore()
+};
 })();
