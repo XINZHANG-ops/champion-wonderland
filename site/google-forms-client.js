@@ -61,7 +61,7 @@
 // A single close-tolerant upload hands the final answers and portrait to Lucy's Google outbox.
 (function(root){
  const storageKey='cw-pending-google-submit-v1',budget=62*1024;
- let available=false,probe,portraitKey,portrait,making=false,job;
+ let available=false,probe,portraitKey,portrait,pngPortrait,making=false,job;
  function receipt(id,capability=false){
   return new Promise(resolve=>{
    const cb='cwReceipt_'+crypto.randomUUID().replaceAll('-',''),script=document.createElement('script');
@@ -81,11 +81,12 @@
  function prepare(world,avatar,sample){
   const key=JSON.stringify([world,avatar,sample]);
   if(key===portraitKey)return;
-  portraitKey=key;portrait=null;making=!sample;
+  portraitKey=key;portrait=null;pngPortrait=null;making=!sample;
   if(sample){portrait='';return;}
   const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=640;
-  root.QuestCardArt.draw(canvas,avatar,world).then(()=>{
+  root.QuestCardArt.draw(canvas,avatar,world).then(png=>{
    if(key!==portraitKey)return;
+   pngPortrait=png;
    for(const quality of [.82,.66,.5,.36,.24]){
     const jpeg=canvas.toDataURL('image/jpeg',quality);
     if(jpeg.startsWith('data:image/jpeg;base64,')&&jpeg.length<=47000){portrait=jpeg;break;}
@@ -118,5 +119,5 @@
   }
   throw Error('We couldn’t confirm your submission. Retry to check or send the same submission again.');
  }
- root.QuestSubmitQueue={warm,prepare,build,deliver,restore,preparing:()=>available&&making,clear(){job=null;backup();}};
+ root.QuestSubmitQueue={warm,prepare,build,deliver,restore,getPortrait:(world,avatar)=>portraitKey===JSON.stringify([world,avatar,false])?pngPortrait:null,preparing:()=>available&&making,clear(){job=null;backup();}};
 })(window);

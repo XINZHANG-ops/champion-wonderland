@@ -22,10 +22,11 @@ const context={console,document:doc,QuestRecords:{ready:()=>true,subscribe(){},s
  assert(!html.includes('Review my resource cart'));
  context.QuestRecords.status=()=> 'error';context.ChampionWorld.saveQuest=async()=>{throw Error('Test save failure')};await run('nextQuest()');
  assert.equal(run('state.step'),5);assert.equal(run('state.complete'),false);assert(html.includes('Test save failure'));assert.equal(run('state.channels.length'),14);assert.equal(element('#record-save-status').hidden,true,'Do not repeat the same save error in two blocks');context.QuestRecords.status=()=> 'idle';
+ let prepared=0;context.QuestCards.create=async()=>{prepared++;return {portrait:"generated"}};
  let finishCard;context.QuestCards.start=(record,avatar,options)=>{context.cardStarted={record,avatar,options};return new Promise(resolve=>finishCard=resolve)};
  let finishSave,saveCalls=0;context.ChampionWorld.saveQuest=record=>{saved=record;saveCalls++;return new Promise(resolve=>finishSave=resolve)};
- const completing=run('nextQuest()');assert.equal(run('state.saving'),true);assert(!html.includes('id="champions-signup"'));assert.equal(context.cardStarted,undefined);
- await run('nextQuest()');assert.equal(saveCalls,1,'A repeated click cannot duplicate the save');finishSave({submissionId:'exact-form-save',cardEnabled:true});await new Promise(resolve=>setImmediate(resolve));assert.equal(run('state.saving'),true,'Keep the page until the card handoff finishes');assert(!html.includes('id="champions-signup"'));finishCard();await completing;
+ const completing=run('nextQuest()');assert.equal(run('state.saving'),true);assert(!html.includes('id="champions-signup"'));assert.equal(context.cardStarted,undefined);assert.equal(prepared,1);assert(html.includes('role="progressbar"'));assert(html.includes('Saving your answers…'));
+ await run('nextQuest()');assert.equal(saveCalls,1,'A repeated click cannot duplicate the save');finishSave({submissionId:'exact-form-save',cardEnabled:true});await new Promise(resolve=>setImmediate(resolve));assert.equal(run('state.saving'),true,'Keep the page until the card handoff finishes');assert(!html.includes('id="champions-signup"'));assert.equal(run('state.saveStage'),'Finishing your adventure…');finishCard();await completing;
  assert.equal(run('state.step'),6);assert.equal(run('state.complete'),true);assert.equal(saved.questCompleted,true);
  assert.equal(saved.workEmail,'alex@example.org');assert.equal(saved.role,'Learning Designer');assert.equal(saved.missionIds.length,1);
  assert.equal(saved.useCases.length,0);assert.equal(saved.desiredOutcomes.length,0);assert.equal(saved.explorationTiming,null);
@@ -43,8 +44,8 @@ const context={console,document:doc,QuestRecords:{ready:()=>true,subscribe(){},s
  context.QuestSubmitQueue={prepare(){},preparing:()=>false,warm(){},build:()=>true,deliver(){handOffs++;return new Promise(resolve=>accept=resolve)}};
  run("state=newQuestState();state.step=5;state.role='educator';state.industry='he'");
  const handoff=run('nextQuest()');
- assert.equal(run('state.step'),6);assert(!run('state.complete'));assert(html.includes('Saving…'));assert(html.includes('Join D2L Champions'));
+ assert.equal(run('state.step'),6);assert(!run('state.complete'));assert(html.includes('Saving…'));assert(html.includes('role="progressbar"'));assert(html.includes('Join D2L Champions'));
  await run('nextQuest()');assert.equal(handOffs,1);
- accept();await handoff;assert(run('state.complete'));assert(html.includes('Mission complete.'));
+ accept();await handoff;assert(run('state.complete'));assert(html.includes('Mission complete.'));assert(!html.includes('role="progressbar"'));
  console.log('PASS: one challenge question, fourteen unlimited formats, explicit submit-to-save, error recovery, no duplicate save, receipt-gated automatic card handoff and CTA-only completion.');
 })().catch(e=>{console.error(e);process.exitCode=1});

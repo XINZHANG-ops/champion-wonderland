@@ -34,6 +34,9 @@ function chosenMission(){return selectedMissions()[0]||null}
 function missionState(){return {...state,missionIds:selectedMissions().map(m=>m.id),missionId:chosenMission()?.id||null,challengeText:chosenMission()?.title||''}}
 function recommendation(){return QuestCatalog.recommend(missionState()).id}
 function questTop(){let phase=state.step<=2?0:state.step===3?1:state.step<=5?2:3;return `<div class="quest-top"><nav class="steps" aria-label="Quest progress">${['Identify','Explore','Discover','Champion'].map((x,i)=>`${i?'<span class="step-line"></span>':''}<span class="step ${i===phase?'active':i<phase?'done':''}" ${i===phase?'aria-current="step"':''}><em>${i<phase?'✓':'0'+(i+1)}</em>${x}</span>`).join('')}</nav><span class="progress-caption">${state.step===0?'YOUR ADVENTURE AWAITS':`${Math.max(1,Math.min(state.step-1,5))} / 5 QUICK STOPS`}</span></div>`}
+function saveProgressBar(label){
+ return '<span class="save-progress" role="status"><span>'+label+'</span><span class="save-track" role="progressbar" aria-label="'+label+'"></span></span>';
+}
 function controls(enabled=true,text='Continue'){return `<div class="controls"><button class="back" id="back">← Back</button><button class="primary" id="next" ${!enabled?'disabled':''}>${text}<span class="arrow">→</span></button></div>`}
 function render(){let s=state.step,r=role(),ind=industry(),world=s===0?'welcome':s===6?'champion':s>=3?r.id:'welcome';let heading='',body='',note='',eyebrow='',tag='',caption='A little curiosity can take you a long way.';
 if(s===0){eyebrow='YOUR NEXT CHAPTER STARTS HERE';heading='Your challenge.<br>Your moose.<br><span>Your next move.</span>';tag='WELCOME TO D2L CHAMPION WONDERLAND';note='Hi, I’m your guide Lucy! Pick up your Adventure Pass. I’ll help you find your learning superpower.';body=`<p class="intro">Complete a learning mission with Lucy.<br>Discover D2L resources matched to your needs.</p><form id="pass-form" class="quick-pass"><div class="pass-fields"><label class="field">Your name<input id="name" name="name" autocomplete="name" required maxlength="100" placeholder="e.g. Lucy Kang" value="${escapeHTML(state.name)}"></label><label class="field">Work email<input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@organization.com" value="${escapeHTML(state.email)}"></label><label class="field">Organization<input id="organization" name="organization" autocomplete="organization" required maxlength="150" placeholder="Where you make an impact" value="${escapeHTML(state.organization)}"></label><label class="field">Your role / job title<input id="role-title" name="roleTitle" autocomplete="organization-title" required maxlength="100" placeholder="Type your own job title" value="${escapeHTML(state.roleTitle)}"></label></div><button class="primary full" type="submit">Get my adventure pass<span class="arrow">→</span></button></form><button class="demo-link" id="sample">Just exploring? Try with sample details</button>`}
@@ -44,14 +47,14 @@ if(s===3){eyebrow='02 / CHOOSE YOUR MISSIONS';heading='What would you<br><span>l
 if(s===4){eyebrow='04 / YOUR PERSONALIZED MISSION MATCH';heading='Your matches.<br><span>Made for your goals.</span>';tag='DISCOVER YOUR NEXT STEP';note='Your learning tracks and challenges are now connected. Here is your Mission Match—next, choose how you want to learn.';body='<div class="powerup-scroll">'+QuestLeadUI.matches(missionState())+'</div>'+controls(!state.followUpSaving,'Continue to resources')}
 
 if(s===4||s===5){window.QuestSubmitQueue?.warm();window.QuestSubmitQueue?.prepare(state.industry,ChampionWorld.getAvatar(),state.isSample||state.staffTestMode);}
-if(s===5){eyebrow='05 / YOUR LEARNING BOOST';heading='How do you<br><span>like to level up?</span>';tag='CHOOSE YOUR NEXT CONNECTION';note='Choose every way you’d like to learn and connect. I’ll bring your preferences into your Moose card.';body=`<p class="intro">Choose the resources and experiences that help you learn best. Pick as many as you want.</p><div class="options grid-two">${channels.map(x=>option(x,state.channels.includes(x.id))).join('')}</div><label class="checkline"><input id="consent" type="checkbox" ${state.contactConsent?'checked':''} ${state.saving?'disabled':''}>I’d like D2L to follow up with resources about my selected challenges and interests. Optional.</label>${controls(!state.saving&&!window.QuestSubmitQueue?.preparing()&&window.QuestRecords?.ready(),state.saving?'Saving…':window.QuestSubmitQueue?.preparing()?'Preparing card…':window.QuestRecords?.ready()?'Submit & email my Moose card':'Saving unavailable')}`}
+if(s===5){eyebrow='05 / YOUR LEARNING BOOST';heading='How do you<br><span>like to level up?</span>';tag='CHOOSE YOUR NEXT CONNECTION';note='Choose every way you’d like to learn and connect. I’ll bring your preferences into your Moose card.';body=`<p class="intro">Choose the resources and experiences that help you learn best. Pick as many as you want.</p><div class="options grid-two">${channels.map(x=>option(x,state.channels.includes(x.id))).join('')}</div><label class="checkline"><input id="consent" type="checkbox" ${state.contactConsent?'checked':''} ${state.saving?'disabled':''}>I’d like D2L to follow up with resources about my selected challenges and interests. Optional.</label>${controls(!state.saving&&!window.QuestSubmitQueue?.preparing()&&window.QuestRecords?.ready(),state.saving?saveProgressBar(state.saveStage||'Saving your answers…'):window.QuestSubmitQueue?.preparing()?'Preparing card…':window.QuestRecords?.ready()?'Submit & email my Moose card':'Saving unavailable')}`}
 if(s===6){eyebrow='MISSION COMPLETE / YOUR NEXT CHAPTER';heading='Mission complete.<br><span>Keep the adventure going.</span>';tag='SHARE IDEAS. INSPIRE LEARNING.';note='Your next adventure continues with the D2L Champions community.';body=(window.QuestCards?.markup(state.recordId,{problemsOnly:true})||'')+'<a class="primary full" href="'+QuestSolutions.championsSignupUrl+'" target="_blank" rel="noopener" id="champions-signup">Join D2L Champions <span>↗</span></a>'}
 
 if(s===6&&state.googleHandoff&&!state.complete){
  eyebrow='YOUR NEXT CHAPTER';heading=state.saving?'Keep the adventure going.':'Submission unconfirmed';
  note='Your submission goes directly to Lucy’s Google account.';
  body='<a class="primary full" href="'+QuestSolutions.championsSignupUrl+'" target="_blank" rel="noopener">Join D2L Champions ↗</a>'
-   +(state.saving?'<p role="status">Saving…</p>':'<button type="button" class="text-btn" id="retry-handoff">Retry submission</button>');
+   +(state.saving?saveProgressBar('Saving…'):'<button type="button" class="text-btn" id="retry-handoff">Retry submission</button>');
 }
 if(s===3&&state.discoveryStep!==null){eyebrow='03 / A FEW QUICK PICKS';heading='Your mission.<br><span>Make it yours.</span>';note='Choose up to five challenges. Then I’ll reveal your Mission Match.';body=QuestDiscoveryUI.quick(state)+controls(state.painPoints.length>0,'Reveal my mission match')}
 
@@ -102,7 +105,24 @@ async function nextQuest(){
  try{
   if(current.step<5&&!current.isSample){try{await ChampionWorld.saveProgress({...record(),checkpoint:['pass','role','world','mission','powerups','resources'][current.step]||'mission'})}catch(error){current.saveError=error.code==='QUEST_RELEASE_MISMATCH'?error.message:'Your latest choices remain in this tab. Please try the final save again.';if(error.code==='QUEST_RELEASE_MISMATCH'){if(state===current)render();return}}}
   if(state!==current)return;
-  if(current.step===5){current.saving=true;current.saveError=null;const finalRecord={...record(),checkpoint:'complete',questCompleted:true};if(window.QuestSubmitQueue?.build(finalRecord,ChampionWorld.getAvatar())){await finishHandoff(current);return;}render();try{const receipt=await ChampionWorld.saveQuest(finalRecord);if(state!==current)return;await window.QuestCards?.start(finalRecord,ChampionWorld.getAvatar(),receipt||{},()=>{if(state===current&&current.complete)render()});if(state!==current)return;current.step=6;current.complete=true;current.saving=false;render();celebrate()}catch(error){current.saving=false;current.saveError='Your interests could not be saved: '+error.message;if(state===current)render()}return}
+  if(current.step===5){
+   current.saving=true;current.saveError=null;current.saveStage='Saving your answers…';
+   const finalRecord={...record(),checkpoint:'complete',questCompleted:true},avatar=ChampionWorld.getAvatar();
+   if(window.QuestSubmitQueue?.build(finalRecord,avatar)){await finishHandoff(current);return;}
+   render();
+   try{
+    const saving=ChampionWorld.saveQuest(finalRecord);
+    // Artwork stays in the browser. Only send it once the matching Form receipt arrives.
+    const prepared=window.QuestCards?.create?.(finalRecord,avatar).catch(()=>null);
+    const receipt=await saving;if(state!==current)return;
+    current.saveStage=receipt?.cardEnabled&&!finalRecord.demo?'Queuing your Moose card…':'Finishing your adventure…';
+    const progress=$('#next .save-progress');
+    if(progress){progress.firstElementChild.textContent=current.saveStage;progress.lastElementChild.setAttribute('aria-label',current.saveStage);}
+    await window.QuestCards?.start(finalRecord,avatar,receipt||{},()=>{if(state===current&&current.complete)render()},prepared);
+    if(state!==current)return;current.step=6;current.complete=true;current.saving=false;render();celebrate();
+   }catch(error){current.saving=false;current.saveError='Your interests could not be saved: '+error.message;if(state===current)render();}
+   return;
+  }
   if(current.step===2)return enterLearningWorld(true);
   if(current.step===3&&current.discoveryStep===null){current.discoveryStep=0;render();return}
   current.step++;render();if(current.step===6)celebrate();
@@ -114,6 +134,9 @@ function enterLearningWorld(advance=false){if(state.industry==='hq'&&!QuestCatal
 function mountLearningWorld(){ChampionWorld.unmount();if(state.step<1||(!state.role&&!state.industry))return;const wrapper=document.querySelector('.scene-wrap'),w=QuestWorldData.worlds[state.industry||'he'];wrapper.innerHTML='<div class="level-preview"><canvas aria-label="D2L Champion Wonderland with all learning communities and D2L HQ"></canvas><button class="level-explore" id="explore-live">Customize your moose & explore together ↗</button></div>';ChampionWorld.mount(wrapper.querySelector('canvas'),w.id,worldContext());wrapper.querySelector('button').onclick=()=>enterLearningWorld(false);document.querySelector('.world-tag').textContent='D2L CHAMPION WONDERLAND / '+QuestWorldData.zones[w.id].label;document.querySelector('.world-caption').textContent='Everyone together · Your area: '+QuestWorldData.zones[w.id].name;if(state.step===3){const reaction=document.createElement('div');reaction.className='scene-reaction';reaction.textContent=selectedMissions().length?selectedMissions().length+' learning tracks selected':'One D2L Champion Wonderland. Choose your learning mission.';wrapper.querySelector('.level-preview').appendChild(reaction)}}
 function updateSaveStatus(){
  const box=$('#record-save-status');if(!box||!window.QuestRecords)return;
+ if(state.step===5&&state.saving){
+  box.hidden=false;box.classList.toggle('save-failed',false);box.textContent='Keep this tab open until saving finishes.';return;
+ }
  const status=QuestRecords.status(state.recordId);box.hidden=state.complete||!!state.saveError||status==='idle'||status==='draft';
  box.classList.toggle('save-failed',status==='error');
  box.innerHTML=status==='saving'?(state.saving?'Saving your answers… Please keep this tab open.':'Saving… You can continue; please keep this tab open.'):status==='error'?'Your latest answers could not be saved. Please keep this tab open. <button type="button" class="text-btn" id="retry-record-save">Retry saving</button>':status==='saved'?'Saved.':'';
