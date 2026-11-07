@@ -1,24 +1,38 @@
 # Champion Wonderland — GitHub Pages frontend
 
-This package is independent of any GitHub account. `site/` contains only public HTML, JavaScript, CSS and logos. No backend code, mail credentials or visitor records are included.
+`site/` contains public HTML, JavaScript, CSS and logos. No backend secrets or visitor responses are included. The existing questionnaire and world remain available.
 
-## Publish later using Lucy's account
+## Data routes
 
-1. Create a repository in the intended account. Upload this package's **contents**, including `.github/`, to its root. Do not upload a ZIP as a single file.
-2. Set `apiBase` in `site/runtime-config.js` to the public HTTPS origin of the **paired backend**, without a trailing slash. The default `backend.example.invalid` is intentionally not connected.
-3. Configure the backend's `QUEST_ALLOWED_ORIGINS` to allow the Pages origin, for example `https://lucy.github.io`. A site URL may be `https://lucy.github.io/champion-world/`, but the allowed origin has no repository path.
-4. In repository Settings → Pages, choose **GitHub Actions**. The included workflow publishes `site/` on pushes to `main` or a manual run. If the default branch has a different name, update the workflow's `branches` entry.
-5. Open the Pages URL. Test joining from two devices, walking, the event screen, and final saving.
+- Public nickname, avatar, map area, movement and an unrelated random game session token go to `QUEST_CONFIG.apiBase` for multiplayer.
+- Real name, email, organization, job title, interests, questionnaire answers and consent stay in this tab until the visitor explicitly saves. A native browser POST sends them directly to `QUEST_CONFIG.formsEndpoint`, the owner's Google Apps Script receiver. The script saves to the owner's Google Form.
+- No questionnaire relay, SMTP or Gmail route exists in this frontend. The final button says Saved only after Google's matching positive receipt. A timeout remains a retryable error with the same submission ID.
+- The questionnaire record ID is not sent to the multiplayer backend. Public nicknames are independently chosen; don't put private contact details in a nickname.
 
-No GitHub username is built into the app. Root sites, repository paths and custom domains work. A custom domain must be explicitly allowed by the backend as well.
+## Publishing
 
-## Data and limits
+1. The owner must first update the existing Apps Script deployment with the supplied `Code.txt`, allowing `https://lucy-kang1022.github.io`. Update the **existing deployment** to a new version; keep the same `/exec` address. Do not run setup again.
+2. Deploy the matching game-only backend and configure its exact `QUEST_ALLOWED_ORIGINS`. The frontend and backend use the same release version.
+3. Copy this package's contents, including `.github/`, into the frontend repository and push. The existing GitHub Actions workflow publishes `site/`.
+4. Test two browsers and one clearly labelled synthetic completed Form response. Verify the response appears in the owner's Form and never in game requests or storage.
 
-- Graphics, questionnaires, recommendations, avatar controls and map gestures run in the browser.
-- Multiplayer uses the configured backend. Final responses go to that backend, then through the approved Item Record/Gmail relay to `lkang@desire2learn.com`.
-- Do not add keys to `runtime-config.js`; it is public. No third-party cookies are required.
-- GitHub hosting does not make the backend trusted by a company. Its network may still need to permit the backend domain.
-- Pair this package with its matching backend release. The version check blocks stale writes instead of silently mixing versions.
-- This package has not been published. The existing public service is unchanged.
+Both runtime addresses are public configuration, not passwords. GitHub Pages alone does not change the trust status of the game backend. The game server necessarily receives connection IPs and can observe public gameplay. The Google account's ownership, retention and company approval remain the owner's responsibility. Google availability, quotas and commit time apply; this build does not promise an instant save or send an email notification.
 
-Official workflow reference: https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+## Updating Lucy's published frontend
+
+This repository shares history with `lucy-kang1022/champion-wonderland`. Only the public frontend is tracked. The Pages workflow deploys from Lucy's repository; it skips in this source repository.
+
+From the existing Lucy repository in PowerShell, run once:
+
+```powershell
+git remote add upstream https://github.com/XINZHANG-ops/champion-wonderland.git
+```
+
+For each update, with a clean working tree:
+
+```powershell
+git pull --ff-only upstream main
+git push origin main
+```
+
+Do not use force push or discard local changes. If Git reports divergence or local changes, stop and inspect. The existing Pages URL stays the same. The current release targets the public game-only API and Lucy's direct Google receiver. Never add backend credentials or visitor responses here.

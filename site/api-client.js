@@ -9,6 +9,10 @@
   }
   function url(route) {
     if (!route.startsWith('/api/')) throw Error('Invalid backend route.');
+    const pathname = route.split('?')[0];
+    if (!['/api/version', '/api/config', '/api/world', '/api/events', '/api/join', '/api/profile', '/api/walk', '/api/heartbeat', '/api/leave', '/api/forget'].includes(pathname)) {
+      throw Error('Only public game requests can use the game backend.');
+    }
     return base.origin + route;
   }
   function request(route, options = {}) {

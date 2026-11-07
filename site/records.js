@@ -3,10 +3,10 @@
  const visitors=new Map(),listeners=new Set(),copy=value=>JSON.parse(JSON.stringify(value));
  function visitor(record){let current=visitors.get(record.recordId);if(!current){current={status:'idle'};visitors.set(record.recordId,current);}return current;}
  function changed(){for(const listener of listeners)listener();}
- function ready(){return window.QuestEmailRecordsClient.ready();}
+ function ready(){return window.QuestPrivateFormsClient.ready();}
  async function saveProgress(record){const current=visitor(record);current.latest=copy(record);if(current.status!=='saved')current.status='draft';changed();return{draft:true,recordId:record.recordId};}
  async function saveQuest(record){
-  if(!ready())throw Error('Email saving is temporarily unavailable. Your answers remain in this tab.');
+  if(!ready())throw Error('Saving is temporarily unavailable. Your answers remain in this tab.');
   await window.QuestRelease?.ensureCompatible();
   const final=copy({...record,checkpoint:'complete',questCompleted:true}),current=visitor(final),bytes=JSON.stringify(final);
   if(current.pending){if(current.receipt.bytes===bytes)return current.pending;throw Error('Saving is already in progress.');}
@@ -15,7 +15,7 @@
   current.latest=final;current.status='saving';changed();
   const receipt=current.receipt;
   current.pending=(async()=>{
-   try{await window.QuestEmailRecordsClient.submit(final,receipt.id);receipt.saved=true;current.status='saved';return{saved:true,recordId:record.recordId};}
+   try{await window.QuestPrivateFormsClient.submit(final,receipt.id);receipt.saved=true;current.status='saved';return{saved:true,recordId:record.recordId};}
    catch(error){current.status='error';throw error;}
    finally{current.pending=null;changed();}
   })();
