@@ -53,3 +53,7 @@ Pending card images and the minimal email content are stored only in that owner'
 The game API compatibility ID remains `lucy-wonderland-v6-f4434aa46f`; this frontend update does not require restarting the existing game backend. New asset cache tag: `cards2`. Older receiver versions keep normal Form saving and in-browser card previews working, but will not be reported as supporting automatic card email.
 
 Validation: `node tests/cards-client.cjs`, `node tests/cards-flow.cjs`, `node tests/map-mobile.cjs`, `node tests/world-return.cjs`. Google mail/queue tests run in the private source checkout with mock Google services. Actual sender authorization and an inbox delivery test must be completed by the Google deployment owner before calling card email live.
+
+## One Moose per browser
+
+A random browser identifier is stored locally and used only for joining the public game. The game stores its SHA-256 hash, never includes it in world snapshots, and reuses the same Moose across reloads/tabs. No hardware fingerprint, email, or questionnaire answers are used. Closing one tab does not remove another tab’s Moose; after all tabs close, heartbeat expiry removes it from the online map within 45 seconds. Clearing site data, private browsing or a different browser creates a separate identity. New nicknames are blank and required.
