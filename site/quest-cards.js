@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- const cards=new Map(),escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const cards=new Map();
  const list=value=>Array.isArray(value)?value.filter(x=>typeof x==='string'):[];
  function model(record){
   const theme=root.QuestCardArt.themes[record.industryId];if(!theme)throw Error('Choose a learning community first.');
@@ -14,7 +14,6 @@
   const html=root.QuestCardTemplate.adventureCard(model(record)).replace('cid:moosePortrait',portrait).replace('cid:d2lLogo',logo).replace('cid:championsQr',qr);
   return{portrait,html};
  }
- function preferenceMarkup(email,checked){return '<label class="checkline"><input id="card-email-opt-in" type="checkbox" '+(checked?'checked':'')+'>Email my Moose adventure card to '+escape(email)+'. Optional; separate from resource follow-up.</label>';}
  function markup(id){const card=cards.get(id);if(!card)return '<p class="card-status">Preparing your Moose card…</p>';const messages={preparing:'Preparing your Moose card…',ready:'Your Moose adventure card is ready.',sending:'Your answers are saved. Scheduling your Moose card email…',queued:'Your Moose adventure card is queued for email.',sent:'Your Moose adventure card has been sent.',unavailable:'Your card is ready. Email delivery is not available yet.',uncertain:'Your answers are saved. Email status needs checking; we will not send a duplicate.',sample:'Your sample Moose card is ready. No email will be sent.',error:'Your answers are saved. We could not confirm your card email. You can retry safely.',artError:'Your answers are saved, but your Moose card could not be prepared.'};return '<section class="adventure-card-result" aria-label="Your Moose adventure card"><p class="card-status" role="status">'+messages[card.status]+'</p>'+(card.package?'<button type="button" class="text-btn" id="view-adventure-card">View my Moose card ↗</button>':'')+(['error','artError'].includes(card.status)?'<button type="button" class="text-btn" id="retry-adventure-card">Retry card</button>':'')+'</section>';}
  function preview(card){const dialog=document.createElement('dialog');dialog.className='adventure-card-dialog';dialog.setAttribute('aria-label','Your Moose adventure card');const close=document.createElement('button');close.className='text-btn';close.textContent='Close card ×';close.onclick=()=>dialog.close();const frame=document.createElement('iframe');frame.title='Your Ignite Canada Moose adventure card';frame.setAttribute('sandbox','allow-popups allow-popups-to-escape-sandbox');frame.srcdoc=card.package.html;dialog.append(close,frame);dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);dialog.showModal();close.focus();}
  function bind(id){const card=cards.get(id);const view=document.getElementById('view-adventure-card'),retry=document.getElementById('retry-adventure-card');if(view&&card)view.onclick=()=>preview(card);if(retry&&card)retry.onclick=()=>void run(card);}
@@ -22,13 +21,12 @@
   if(card.pending)return card.pending;
   card.pending=(async()=>{try{if(!card.package){card.status='preparing';card.changed();try{card.package=await create(card.record,card.avatar)}catch{card.status='artError';return}}
    if(card.record.isSample||card.record.staffTestMode||card.record.demo){card.status='sample';return}
-   if(!card.options.email){card.status='ready';return}
-   if(!card.options.receipt.cardEnabled){card.status='unavailable';return}
+   if(!card.receipt.cardEnabled){card.status='unavailable';return}
    card.status='sending';card.changed();
-   const result=await root.QuestPrivateFormsClient.sendCard(card.record,card.options.receipt.submissionId,{requested:true,portrait:card.package.portrait});
+   const result=await root.QuestPrivateFormsClient.sendCard(card.record,card.receipt.submissionId,{requested:true,portrait:card.package.portrait});
    card.status=result.status==='sent'?'sent':result.status==='uncertain'?'uncertain':'queued';
   }catch{card.status='error'}finally{card.pending=null;card.changed()}})();return card.pending;
  }
- function start(record,avatar,options,changed){if(cards.has(record.recordId))return;const card={record:JSON.parse(JSON.stringify(record)),avatar:root.QuestWorldData.sanitizeAvatar(avatar),options,changed,status:'preparing'};cards.set(record.recordId,card);void run(card);}
- root.QuestCards={model,create,preferenceMarkup,markup,bind,start,forget:id=>cards.delete(id)};
+ function start(record,avatar,receipt,changed){if(cards.has(record.recordId))return;const card={record:JSON.parse(JSON.stringify(record)),avatar:root.QuestWorldData.sanitizeAvatar(avatar),receipt:receipt||{},changed,status:'preparing'};cards.set(record.recordId,card);void run(card);}
+ root.QuestCards={model,create,markup,bind,start,forget:id=>cards.delete(id)};
 })(window);
