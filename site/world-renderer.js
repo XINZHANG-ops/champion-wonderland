@@ -69,7 +69,12 @@ class WorldRenderer{
  }
  p(x,y,z=0){return [(x-y)*26,(x+y)*13-z]}
  district(id,draw){const z=D.zones[id],project=this.p;this.p=(x,y,h=0)=>project.call(this,z.origin[0]+x*z.scale,z.origin[1]+y*z.scale,h);try{draw()}finally{this.p=project}}
- districtEntities(time,add){for(const z of Object.values(D.zones)){if(z.id==='hq'){add(44,()=>this.headquarters());continue}const depth=(x,y)=>z.origin[0]+z.origin[1]+(x+y)*z.scale;add(depth(5,5),()=>this.district(z.id,()=>this.building(z.id==='he'?'university':z.id==='corp'?'corporate':z.id==='k12'?'kindergarten':'civic')));add(depth(11,5),()=>this.district(z.id,()=>z.id==='k12'?this.playground(time):this.library(z.id==='corp',z.id==='public'?'PUBLIC LIBRARY':undefined)));add(depth(5,12),()=>this.district(z.id,()=>z.id==='k12'?this.sandbox():this.fountain(4.2,11.1,time)));add(depth(11,12),()=>this.district(z.id,()=>{if(z.id==='k12')this.storyGarden();else{this.bench(10.3,11.4);this.bench(12.1,12.5);this.flowers(11.5,11.4,z.id==='corp'?'#a29cbe':'#e4af79')}}));add(z.x+z.y+z.h-1,()=>this.label(z.label,z.x+z.w/2,z.y+z.h-.8,-8))}}
+ districtEntities(time,add){for(const z of Object.values(D.zones)){if(z.id==='hq'){add(44,()=>this.headquarters());continue}const depth=(x,y)=>z.origin[0]+z.origin[1]+(x+y)*z.scale;add(depth(5,5),()=>this.district(z.id,()=>this.building(z.id==='he'?'university':z.id==='corp'?'corporate':z.id==='k12'?'kindergarten':'civic')));add(depth(11,5),()=>this.district(z.id,()=>z.id==='k12'?this.playground(time):this.library(z.id==='corp',z.id==='public'?'PUBLIC LIBRARY':undefined)));add(depth(5,12),()=>this.district(z.id,()=>z.id==='k12'?this.sandbox():this.fountain(4.2,11.1,time)));if(z.id==='k12')add(depth(11,12),()=>this.district(z.id,()=>this.storyGarden()));
+ else{
+  for(const [x,y] of [[10.3,11.4],[12.1,12.5]])add(depth(x+.53,y+.18),()=>this.district(z.id,()=>this.bench(x,y)));
+  add(depth(11.5,11.4),()=>this.district(z.id,()=>this.flowers(11.5,11.4,z.id==='corp'?'#a29cbe':'#e4af79')));
+ }
+ add(z.x+z.y+z.h-1,()=>this.label(z.label,z.x+z.w/2,z.y+z.h-.8,-8))}}
 
  polygon(points,fill,stroke){const c=this.ctx;c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=.7;c.stroke()}}
  shape(points,color){this.polygon(points.map(p=>this.p(...p)),color)}
@@ -80,7 +85,12 @@ class WorldRenderer{
  text(text,x,y,size=10,color='#4d6254',align='center'){const c=this.ctx;c.font=`600 ${size}px 'DM Sans',Arial,sans-serif`;c.fillStyle=color;c.textAlign=align;c.fillText(text,x,y)}
  tree(x,y,s=1,color='#6f9164'){this.cube(x-.07,y-.07,.14,.14,30*s,'#a98b66');const pt=this.p(x,y);this.polygon([[pt[0]-23*s,pt[1]-24*s],[pt[0],pt[1]-84*s],[pt[0]+23*s,pt[1]-24*s],[pt[0],pt[1]-8*s]],color);this.polygon([[pt[0],pt[1]-84*s],[pt[0]+23*s,pt[1]-24*s],[pt[0],pt[1]-8*s]],shade(color,-19));this.polygon([[pt[0]-17*s,pt[1]-47*s],[pt[0],pt[1]-96*s],[pt[0]+18*s,pt[1]-47*s],[pt[0],pt[1]-33*s]],shade(color,15))}
  flowers(x,y,color='#e4af79'){for(let i=0;i<5;i++){const p=this.p(x+(i%3)*.22,y+Math.floor(i/3)*.23);this.line([p[0],p[1]],[p[0],p[1]-8],'#779568',1.5);this.polygon([[p[0]-3,p[1]-8],[p[0],p[1]-12],[p[0]+4,p[1]-8],[p[0],p[1]-5]],color)}}
- bench(x,y){this.cube(x,y,1.05,.36,12,'#c8a77c');this.cube(x,y+.28,1.05,.09,18,'#ba9972',9);this.cube(x+.08,y+.02,.12,.15,7,'#7d8e79');this.cube(x+.86,y+.02,.12,.15,7,'#7d8e79')}
+ bench(x,y){
+  for(const dx of [.08,.86])for(const dy of [.02,.26])this.cube(x+dx,y+dy,.1,.1,8,'#776b58');
+  for(const dy of [0,.2])this.cube(x,y+dy,1.05,.16,2,'#c8a77c',8);
+  for(const dx of [.08,.86])this.cube(x+dx,y,.1,.09,10,'#776b58',10);
+  this.cube(x,y,1.05,.08,5,'#b89367',16);
+ }
  label(name,x,y,z=0){const p=this.p(x,y,z),c=this.ctx;c.font='600 10px DM Sans, Arial';const width=c.measureText(name).width+22;c.fillStyle='#fffdf0ed';c.beginPath();c.roundRect(p[0]-width/2,p[1]-12,width,23,6);c.fill();c.strokeStyle='#d4dcc9';c.lineWidth=.7;c.stroke();this.text(name,p[0],p[1]+3,9)}
  building(type){if(type==='kindergarten'){this.cube(3.2,3.3,4,3.3,55,'#efd3a6');this.roof(3.2,3.3,4,3.3,55,'#cf9787');this.window(3.55,6.61,15,.65,21,'#a4c7b0');this.window(6.15,6.61,15,.65,21,'#9dbecb');this.window(4.85,6.62,0,.65,33,'#91ad88');for(let i=0;i<6;i++)this.cube(3.2+i*.66,6.63,.65,.16,6,['#d98f7e','#e1b370','#d4c37d','#9ab68b','#91b7ba','#af9dba'][i],41);this.label('RAINBOW CLASSROOM',5.2,4.9,110)}
  if(type==='university'){this.cube(3.2,3.3,4.2,3.2,68,'#ded4b6');this.roof(3.2,3.3,4.2,3.2,68,'#788c78');this.cube(3.05,6.45,4.5,.7,6,'#c7c5ab');for(let i=0;i<5;i++){this.cube(3.35+i*.8,6.55,.16,.18,43,'#eee8cf',6);this.window(3.4+i*.8,6.52,31,.45,20)}this.cube(4.7,3.9,1,1,112,'#e5dec2');this.roof(4.7,3.9,1,1,112,'#6c8270');const p=this.p(5.2,4.91,94);this.ctx.fillStyle='#fff7df';this.ctx.beginPath();this.ctx.ellipse(p[0],p[1],8,10,0,0,Math.PI*2);this.ctx.fill();this.line(p,[p[0]+3,p[1]-4],'#697968',1.4);this.line(p,[p[0]-3,p[1]-2],'#697968',1.4);this.label('CURIOSITY UNIVERSITY',5.2,4,163)}
@@ -112,15 +122,15 @@ class WorldRenderer{
   this.shape([[cx,cy-1.55,0],[cx+.45,cy-.45,0],[cx+1.55,cy,0],[cx+.45,cy+.45,0],[cx,cy+1.55,0],[cx-.45,cy+.45,0],[cx-1.55,cy,0],[cx-.45,cy-.45,0]],'#edab64');
   this.shape([[cx,cy-.55,0],[cx+.55,cy,0],[cx,cy+.55,0],[cx-.55,cy,0]],'#fff3dc');
  }
- draw(time){this.renderTime=time;this.applyResize();if(!this.w||!this.h)return;const followed=this.players.find(p=>p.id===this.focusId);if(followed){const pos=this.positionFor(followed,time);this.camera={x:pos.x,y:pos.y};this.updateCamera()}this.now=this.clock();this.season=QuestEnvironment.garden();this.labels=[];this.playerLabels=[];this.labelBoxes=[];if(this.groundStamp!==this.season.stamp){this.groundLayer=null;this.groundStamp=this.season.stamp}const c=this.ctx,w=this.season;c.fillStyle=w.sky;c.fillRect(0,0,this.w,this.h);const glow=c.createRadialGradient(this.w*.5,this.h*.35,10,this.w*.5,this.h*.35,this.w*.6);glow.addColorStop(0,'#fffdf299');glow.addColorStop(1,w.sky);c.fillStyle=glow;c.fillRect(0,0,this.w,this.h);this.drawBackdrop?.();c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);this.drawGround();this.welcomePlazaFloor();
+ draw(time){this.renderTime=time;this.applyResize();if(!this.w||!this.h)return;const followed=this.players.find(p=>p.id===this.focusId);if(followed){const pos=this.positionFor(followed,time);this.camera={x:pos.x,y:pos.y};this.updateCamera()}this.now=this.clock();this.season=QuestEnvironment.garden();this.labels=[];this.playerLabels=[];this.labelBoxes=[];if(this.groundStamp!==this.season.stamp){this.groundLayer=null;this.groundStamp=this.season.stamp}const c=this.ctx,w=this.season;c.fillStyle=w.sky;c.fillRect(0,0,this.w,this.h);const glow=c.createRadialGradient(this.w*.5,this.h*.35,10,this.w*.5,this.h*.35,this.w*.6);glow.addColorStop(0,'#fffdf299');glow.addColorStop(1,w.sky);c.fillStyle=glow;c.fillRect(0,0,this.w,this.h);this.drawBackdrop?.();c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);this.drawGround();this.welcomePlazaFloor();this.picnicFloor?.();
  const entities=[];const add=(depth,fn)=>entities.push({depth,fn});this.districtEntities(time,add);
- this.sceneryEntities(time,add);
+ this.sceneryEntities(time,add);this.missionEntities?.(add);
  for(const[x,y]of[[44,32],[49,40]])add(x+y,()=>this.bench(x,y));
  for(const[x,y]of[[43.3,31.4],[49.4,31.4],[43.3,41],[49.4,41]])add(x+y,()=>this.flowers(x,y,this.season.flower));
  this.label('WELCOME · MEET LUCY',46.75,31,28);
  this.crowdSize=this.players.length;for(const p of this.players){const pos=this.positionFor(p,time);add(pos.x+pos.y+.2,()=>this.character(p,time));}
  add(87,()=>this.character({id:'moose-guide',name:'Lucy · guide',world:this.world,x:46.5,y:40.5,moving:false,avatar:{skin:'#b87850',shirt:'#f58220',hair:'#c99d59',style:'bob',hat:'cap',hatColor:'#242424',glasses:'round'}},time));
- entities.sort((a,b)=>a.depth-b.depth);for(const entity of entities)entity.fn();if(this.marker&&time-this.marker.at<2200){const p=this.p(this.marker.x,this.marker.y,2);c.strokeStyle='#f9f5df';c.lineWidth=2;c.beginPath();c.ellipse(p[0],p[1],13,6,0,0,Math.PI*2);c.stroke()}c.restore();this.drawLabels?.();this.drawSeasonOverlay(time);
+ entities.sort((a,b)=>a.depth-b.depth);for(const entity of entities)entity.fn();if(this.marker&&time-this.marker.at<2200){const p=this.p(this.marker.x,this.marker.y,2);c.strokeStyle='#f9f5df';c.lineWidth=2;c.beginPath();c.ellipse(p[0],p[1],13,6,0,0,Math.PI*2);c.stroke()}c.restore();this.drawSeasonOverlay(time);this.drawLabels?.();
  }
 }
 window.QuestWorldRenderer=WorldRenderer;

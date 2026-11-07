@@ -1,20 +1,97 @@
 (function(){
-const proto=QuestWorldRenderer.prototype,baseDraw=proto.draw;
-proto.draw=function(time){baseDraw.call(this,time);const context=this.context;if(!context||this.world==='hq')return;const c=this.ctx;c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);const role=context.role||'educator',step=context.step||3;const district=QuestWorldData.zones[this.world],project=this.p;if(district)this.p=(x,y,z=0)=>project.call(this,district.origin[0]+x*district.scale,district.origin[1]+y*district.scale,z);
-// A personal mission corner changes with the selected professional role.
-if(role==='designer'){this.cube(10.2,10.5,1.7,1.2,18,'#d5b28f');this.shape([[10.4,10.6,20],[11.5,10.6,20],[11.5,10.6,61],[10.4,10.6,61]],'#fff5d8');this.shape([[10.6,10.59,30],[11.2,10.59,49],[11.4,10.59,30]],'#f58220');this.label('CREATIVE STUDIO',11,10.7,84)}
-else if(role==='admin'){for(let i=0;i<3;i++){this.cube(10.3+i*.6,10.6,.45,.65,41,'#8fa7aa');const p=this.p(10.55+i*.6,11.26,27);this.ctx.fillStyle='#f9ce88';this.ctx.fillRect(p[0]-1,p[1]-8,2,11)}this.label('CONTROL CENTER',11.1,10.8,78)}
-else if(role==='leader'){this.cube(10.4,10.5,1.5,1,13,'#c7b491');this.cube(10.6,10.7,.3,.3,38,'#9fb3a3',13);this.cube(11.1,10.7,.3,.3,27,'#f2b174',13);this.label('STRATEGY CENTER',11.1,10.8,82)}
-else if(role==='training'){this.cube(10.4,10.5,1.6,1,9,'#a9a3be');for(let i=0;i<3;i++)this.cube(10.6+i*.4,10.8,.25,.25,16+i*10,'#d5b973',9);this.label('SKILLS STATION',11.2,10.7,80)}
-else{this.cube(10.4,10.7,1.8,.6,35,'#bba37d');this.shape([[10.5,11.31,12],[12,11.31,12],[12,11.31,31],[10.5,11.31,31]],'#4c7160');const p=this.p(11.2,11.32,22);this.text('LEARN • EXPLORE',p[0],p[1],6,'#f7efdc');this.label(role==='explorer'?'MISSION PAVILION':'TEACHING CORNER',11.3,10.8,77)}
-const challenge=context.challengeText||'';
-if(challenge){if(context.missionId==='analytics'){this.cube(4.7,7.2,1.5,.55,35,'#839e9a');for(let i=0;i<4;i++)this.cube(4.9+i*.3,7.8,.17,.12,9+i*7,'#f1bb70',7);this.label('LEARNING ANALYTICS LAB',5.5,7.5,76)}else if(context.missionId==='interactive'){this.cube(4.7,7.2,1.5,.6,20,'#d2b28a');this.shape([[4.85,7.81,20],[6.05,7.81,20],[6.05,7.81,53],[4.85,7.81,53]],'#587b71');const p=this.p(5.45,7.82,36);this.text('✦',p[0],p[1],16,'#ffd08c');this.label('INTERACTIVE COURSE STUDIO',5.5,7.5,79)}else if(/accessib/i.test(challenge)){this.shape([[4.6,6.8,18],[5.5,6.8,18],[5.5,8.5,1],[4.6,8.5,1]],'#dbb17e');for(let i=0;i<4;i++)this.line(this.p(4.6,7+i*.4,16-i*4),this.p(5.5,7+i*.4,16-i*4),'#f0d6aa',1);this.label('ACCESS FOR EVERYONE',5.1,8.6,8)}else if(/AI|time|content|development/i.test(challenge)){this.cube(5.2,7.2,.65,.65,17,'#f58220');const p=this.p(5.5,7.5,53+(this.motion?Math.sin(time/800)*3:0));this.polygon([[p[0],p[1]-14],[p[0]+13,p[1]],[p[0],p[1]+14],[p[0]-13,p[1]]],'#f5b96e');this.text('✦',p[0],p[1]+4,12,'#fff9de');this.label('IDEA LAB',5.5,7.5,83)}else{this.bench(4.5,7.1);this.bench(6.2,7.4);this.label('CONNECT & DISCOVER',5.5,7.4,48)}}
-if(step>=4&&context.products?.length){context.products.forEach((id,i)=>{const order=['creator','access','lumi','services','performance','achievement','link','optimization'].indexOf(id),x=3.3+order*.6;this.cube(x,13,.55,.55,18,['#f58220','#8fa594','#a8a1bb','#a0b9be','#e9bb78','#99ad83','#84a2b7','#bd9d75'][order]);const p=this.p(x+.3,13.3,28);this.text(['C+','A+','AI','LS','P+','A+','LINK','OS'][order],p[0],p[1],9,'#6b542f')});this.label('YOUR POWER-UPS',5,13.6,-10)}
-if(step>=5&&context.channels?.length){const ch=context.channels;if(ch.includes('workshop')){this.bench(3.5,10.1);this.bench(5.1,10.1);this.cube(4.1,10.7,.7,.7,17,'#e1bb8c')}if(ch.includes('webinar')||ch.includes('video')){this.cube(6.3,10.4,.1,.1,37,'#8b9e94');this.shape([[6,10.4,20],[7.3,10.4,20],[7.3,10.4,52],[6,10.4,52]],'#556f6a');const p=this.p(6.65,10.41,36);this.text('▷',p[0],p[1],17,'#f3d6ac')}if(ch.includes('conference')){this.cube(3.4,7.3,2,.9,10,'#cbb18e');this.cube(4.25,7.4,.3,.3,29,'#f58220',10)}if(ch.includes('email')){this.cube(6.3,12.7,.12,.12,24,'#a78b68');this.cube(6.1,12.5,.6,.5,13,'#eea45f',22)}if(ch.includes('paper')){this.cube(3.4,12.2,.8,.8,18,'#d7c19a');this.cube(3.5,12.3,.6,.5,3,'#fff7de',18)}}
-if(step>=5&&context.channels?.length){const ch=context.channels;if(ch.includes('roundtable')||ch.includes('officehours')){this.bench(10.5,7.2);this.bench(12.1,7.2);this.cube(11.1,7.6,.75,.6,17,'#d5b17f');this.label('MEET & EXCHANGE',11.5,7.8,55)}if(ch.includes('selfpaced')){this.cube(6.8,11.9,.5,.6,23,'#d6be9b');for(let i=0;i<3;i++)this.cube(6.85,12,.4,.35,3,['#eeb67b','#b7a3cd','#8eafac'][i],23+i*3)}if(ch.includes('sandbox')){this.cube(10.6,13,.5,.5,24,'#f58220');this.shape([[10.6,13.51,24],[11.2,13.51,24],[11.2,13.51,42],[10.6,13.51,42]],'#506b68');this.label('TRY IT YOURSELF',10.9,13.5,62)}}
-if(context.storyTypes?.length){this.cube(3.4,10.1,1.5,.6,28,'#dabd95');const p=this.p(4.1,10.72,42);this.text('CUSTOMER STORIES',p[0],p[1],7,'#9c672b');this.label('YOUR STORY PLAYLIST',4.2,10.8,68)}
-if(step>=6){this.cube(6.3,7.1,.9,.9,10,'#f58220');this.cube(6.65,7.45,.18,.18,27,'#e6ba63',10);const p=this.p(6.75,7.55,55);this.polygon([[p[0]-14,p[1]-16],[p[0]+14,p[1]-16],[p[0]+11,p[1]+5],[p[0],p[1]+13],[p[0]-11,p[1]+5]],'#e5b45a');this.text('✦',p[0],p[1]+1,15,'#fff4d2');this.label('MISSION COMPLETE',6.8,7.6,94)}
-this.p=project;c.restore();this.drawLabels?.();};
+ const P=QuestWorldRenderer.prototype;
+ const wood='#ac8056',paper='#fff4db',chalk='#e8efcf';
+
+ // A supported board with a shallow frame and a ledge. Markings lie in the board's plane.
+ function board(r,x,y,face,icon){
+  for(const dx of [.14,1.28]){
+   r.cube(x+dx-.08,y-.16,.28,.46,3,wood);
+   r.cube(x+dx,y,.12,.12,39,wood);
+  }
+  r.cube(x,y,1.55,.13,26,wood,16);
+  const front=y+.14;
+  r.shape([[x+.07,front,18],[x+1.48,front,18],[x+1.48,front,40],[x+.07,front,40]],face);
+  const mark=(a,h,b,k)=>r.line(r.p(x+a,front,h),r.p(x+b,front,k),chalk,1.7);
+  if(icon==='book'){
+   for(const direction of [-1,1]){
+    const outside=.78+direction*.47;
+    mark(.78,32,outside,35);mark(outside,35,outside,25);mark(outside,25,.78,22);
+   }
+   mark(.78,32,.78,22);
+  }else if(icon==='chart'){
+   for(let i=0;i<3;i++)mark(.4+i*.35,22,.4+i*.35,26+i*4);
+  }else if(icon==='art'){
+   mark(.28,23,.68,34);mark(.68,34,.94,28);mark(.94,28,1.12,31);mark(1.12,31,1.32,23);
+  }else{
+   mark(.62,24,.62,35);mark(.62,35,1.07,29);mark(1.07,29,.62,24);
+  }
+  r.cube(x-.03,y+.12,1.61,.13,2,wood,15);
+ }
+ function table(r,x,y,w=1.25,d=.68){
+  for(const dx of [.08,w-.18])for(const dy of [.06,d-.14])r.cube(x+dx,y+dy,.1,.1,15,wood);
+  r.cube(x,y,w,d,3,'#dfbe91',15);
+ }
+ const roles={
+  educator:['Teaching corner','book'],explorer:['Mission pavilion','book'],
+  designer:['Creative studio','art'],admin:['Control center','chart'],
+  leader:['Strategy center','chart'],training:['Skills station','chart']
+ };
+ const products=['creator','access','lumi','services','performance','achievement','link','optimization'];
+ P.missionEntities=function(add){
+  const ctx=this.context,z=QuestWorldData.zones[this.world];
+  if(!ctx||!z||z.id==='hq')return;
+  const prop=(x,y,paint)=>add(z.origin[0]+z.origin[1]+(x+y)*z.scale,()=>this.district(z.id,paint));
+  const sign=(x,y,title,icon)=>prop(x+.78,y+.12,()=>{
+   board(this,x,y,'#406858',icon);
+   this.label(title.toUpperCase(),x+.78,y,54);
+  });
+  const seat=(x,y)=>prop(x+.53,y+.2,()=>this.bench(x,y));
+  const [roleTitle,roleIcon]=roles[ctx.role]||roles.educator;
+  sign(10.4,10.7,roleTitle,roleIcon);
+  const challenge=ctx.challengeText||'';
+  if(challenge){
+   if(ctx.missionId==='analytics')sign(4.7,7.2,'Learning analytics lab','chart');
+   else if(ctx.missionId==='interactive')sign(4.7,7.2,'Interactive course studio','play');
+   else if(/accessib/i.test(challenge))prop(5.05,7.65,()=>{
+    this.shape([[4.6,6.8,18],[5.5,6.8,18],[5.5,8.5,1],[4.6,8.5,1]],'#dbb17e');
+    for(let i=0;i<4;i++)this.line(this.p(4.6,7+i*.4,16-i*4),this.p(5.5,7+i*.4,16-i*4),'#f0d6aa',1);
+    this.label('ACCESS FOR EVERYONE',5.1,8.6,25);
+   });
+   else if(/AI|time|content|development/i.test(challenge))sign(4.7,7.2,'Idea lab','art');
+   else{seat(4.5,7.1);seat(6.2,7.4);this.district(z.id,()=>this.label('CONNECT & DISCOVER',5.5,7.4,48))}
+  }
+  const step=ctx.step||3;
+  if(step>=4&&ctx.products?.length){
+   for(const id of ctx.products){
+    const i=products.indexOf(id);if(i<0)continue;
+    const x=3.3+i*.6;
+    prop(x+.28,13.28,()=>{
+     this.cube(x,13,.55,.55,6,['#ed984f','#8fa594','#a8a1bb','#a0b9be','#e9bb78','#99ad83','#84a2b7','#bd9d75'][i]);
+     const p=this.p(x+.28,13.28,7);
+     this.text(['C+','A+','AI','LS','P+','A+','LINK','OS'][i],p[0],p[1],7,'#493b2b');
+    });
+   }
+   this.district(z.id,()=>this.label('YOUR POWER-UPS',5,13.6,24));
+  }
+  if(step>=5){
+   const ch=ctx.channels||[];
+   if(ch.includes('workshop')){seat(3.5,10.1);seat(5.1,10.1);prop(4.45,11,()=>table(this,4.1,10.7,.7,.7))}
+   if(ch.includes('webinar')||ch.includes('video'))sign(6,10.4,'Screening room','play');
+   if(ch.includes('conference'))prop(4.4,7.75,()=>{this.cube(3.4,7.3,2,.9,5,'#cbb18e');this.cube(4.25,7.4,.3,.3,20,wood,5);this.cube(4.16,7.34,.5,.43,3,wood,25)});
+   if(ch.includes('email'))prop(6.4,12.8,()=>{this.cube(6.3,12.7,.12,.12,18,wood);this.cube(6.1,12.5,.6,.5,12,'#eea45f',18);this.cube(6.2,13,.37,.02,2,'#705745',25)});
+   if(ch.includes('paper'))prop(3.8,12.6,()=>{table(this,3.4,12.2,.8,.8);this.cube(3.5,12.3,.6,.5,2,paper,18)});
+   if(ch.includes('roundtable')||ch.includes('officehours')){
+    seat(10.5,7.2);seat(12.1,7.2);prop(11.6,7.9,()=>{table(this,11.1,7.6);this.label('MEET & EXCHANGE',11.5,7.8,55)});
+   }
+   if(ch.includes('selfpaced'))prop(7.05,12.2,()=>{table(this,6.8,11.9,.7,.6);for(let i=0;i<3;i++)this.cube(6.85,12,.5,.35,3,['#eeb67b','#b7a3cd','#8eafac'][i],18+i*3)});
+   if(ch.includes('sandbox'))sign(10.6,13,'Try it yourself','play');
+  }
+  if(ctx.storyTypes?.length)sign(2.5,9,'Customer stories','book');
+  if(step>=6)prop(6.75,7.55,()=>{
+   this.cube(6.3,7.1,.9,.9,5,'#d5b986');this.cube(6.65,7.45,.18,.18,24,'#e6ba63',5);
+   const p=this.p(6.75,7.55,41);
+   this.polygon([[p[0]-10,p[1]-12],[p[0]+10,p[1]-12],[p[0]+8,p[1]+3],[p[0],p[1]+11],[p[0]-8,p[1]+3]],'#e5b45a');
+   this.text('✦',p[0],p[1]+1,12,paper);this.label('MISSION COMPLETE',6.8,7.6,65);
+  });
+ };
 })();
-
-

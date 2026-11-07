@@ -15,3 +15,15 @@ assert(events.indexOf('middle')<events.indexOf('moose-guide')&&events.indexOf('m
 assert(events.indexOf('middle')<events.indexOf('bench:49,40')&&events.indexOf('bench:49,40')<events.indexOf('front'),'The near bench does not share the rear bench sorting key');
 for(const [x,y]of[[46,32],[46,36],[46,40],[48,36]])assert(D.walkable(x,y),'The welcome area remains open to walkers');
 console.log('PASS: decorated flush paving always paints below visitors; both benches and Lucy sort independently; central walking space stays open.');
+
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../site/world-effects.js'),'utf8'),sandbox);
+Object.assign(r,{world:'he',context:{step:6,products:['creator','access'],challengeText:'Content',channels:['workshop','video','conference','email','paper','roundtable','sandbox','selfpaced'],storyTypes:['story']},
+ players:[{id:'behind',x:15,y:15},{id:'ahead',x:17,y:17}],
+ cube(){},line(){},polygon(){},text(){},drawSeasonOverlay(){events.push('weather')},drawLabels(){events.push('names')},label:name=>events.push(name)});
+for(const [role,label] of Object.entries({educator:'TEACHING CORNER',explorer:'MISSION PAVILION',admin:'CONTROL CENTER',designer:'CREATIVE STUDIO',leader:'STRATEGY CENTER',training:'SKILLS STATION'})){
+ events.length=0;r.context.role=role;r.draw(200);
+ assert(events.indexOf('behind')<events.indexOf(label)&&events.indexOf(label)<events.indexOf('ahead'),role+' must sort between the two visitors');
+ assert.deepEqual(events.slice(-2),['weather','names']);
+ assert.equal(events.filter(e=>e==='names').length,1);
+}
+console.log('PASS: all six role stations sort by position with visitors; names paint once, after every prop and the weather.');

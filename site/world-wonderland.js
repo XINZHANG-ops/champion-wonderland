@@ -19,10 +19,17 @@ P.landmark=function(s,time){const{x,y,w,d,kind}=s;if(kind==='research'){this.cub
  else if(kind==='swings'){for(const dx of[.1,3.5]){this.cube(x+dx,y,.12,.12,65,'#8fa79d');this.cube(x+dx,y+2,.12,.12,65,'#8fa79d')}this.cube(x,y,3.8,.15,6,'#cfa877',65);for(let i=0;i<2;i++){const at=x+.6+i*1.5,offset=this.motion?Math.sin(time/850+i)*.2:0;for(const side of[0,.8])this.line(this.p(at+side,y+.1,65),this.p(at+side,y+1+offset,17),'#8da69d',1.7);this.cube(at,y+.8+offset,.9,.5,4,'#e3b46e',13)}}
  this.label(s.name,x+w/2,y+d/2,kind==='cityhall'?120:kind==='research'?113:kind==='innovation'?105:kind==='swings'?90:kind==='slide'?84:58)};
 
+P.picnicFloor=function(){this.shape([[23,29,0],[26,29,0],[26,31,0],[23,31,0]],'#e9bc8b')};
 P.sceneryEntities=function(time,add){D.scenery.trees.forEach(([x,y,s],i)=>add(x+y,()=>this[D.scenery.treeKinds[i%D.scenery.treeKinds.length]](x,y,s)));for(const[x,y,variant]of D.scenery.meadows)add(x+y,()=>this.wildflowers(x,y,variant));for(const [x,y]of D.scenery.benches)add(x+y,()=>this.bench(x,y));for(const [x,y]of D.scenery.flowerbeds)add(x+y,()=>{this.cube(x,y,1.2,.65,3,'#d1bea0');this.flowers(x+.1,y+.1,this.season.flower);this.flowers(x+.6,y+.2,this.season.flower)});for(const [x,y,n]of D.scenery.hedges)for(let i=0;i<n;i++)add(x+y+i*.7,()=>this.shrub(x,y+i*.7,.8));for(const s of D.scenery.structures)add(s.x+s.y+(s.w+s.d)/2,()=>this.landmark(s,time));add(99,()=>this.pond());add(75,()=>this.pavilion(37,34));
  for(const[x,y]of[[44,9],[48,20],[46,48],[48,62],[54,30],[68,44]])add(x+y,()=>{this.cube(x,y,.12,.12,39,'#8e9c89');const p=this.p(x,y,49);this.polygon([[p[0]-7,p[1]-6],[p[0]+7,p[1]-6],[p[0]+6,p[1]+6],[p[0]-6,p[1]+6]],'#f4e8b7')});
  for(const[x,y]of[[54.5,34],[54.5,39],[66.5,35],[66.5,39]])add(x+y,()=>{this.cube(x,y,.5,.35,6,'#a4afa3');for(let i=0;i<4;i++)this.line(this.p(x+i*.1,y,4),this.p(x+i*.1,y,22+i*3),'#799d70',2)});
- add(55,()=>{this.cube(23,29,3,2,.8,'#e9bc8b');this.bench(23,28.5);this.bench(25,30.5);this.label('PICNIC MEADOW',24.5,30,30)});add(91,()=>{for(let i=0;i<3;i++){this.cube(27+i*2.5,63,.85,.85,17,'#cbb18c');this.bench(27+i*2.5,64)}this.label('COLLABORATION CAFE',30,64,44)});
+ for(const [x,y] of [[23,28.5],[25,30.5]])add(x+y+.71,()=>this.bench(x,y));
+ this.label('PICNIC MEADOW',24.5,30,30);
+ for(const x of [27,29.5,32]){
+  add(x+63.85,()=>this.cube(x,63,.85,.85,17,'#cbb18c'));
+  add(x+64.71,()=>this.bench(x,64));
+ }
+ this.label('COLLABORATION CAFE',30,64,44);
  for(const [text,x,y]of[['LIBRARY →',22,12],['PLAY GARDEN →',49,24],['D2L HQ →',31,37],['CIVIC GARDEN →',49,54]])add(x+y,()=>{this.cube(x,y,.12,.12,25,'#aa9274');this.cube(x-.4,y,.95,.12,9,'#f3e4bd',22);if(this.zoom>1.45)this.label(text,x,y,43)})};
 
 // Collect world anchors, then render readable badges in screen pixels, independent of zoom.
