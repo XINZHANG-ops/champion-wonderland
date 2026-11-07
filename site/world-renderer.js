@@ -98,10 +98,26 @@ class WorldRenderer{
   if(cached)main.drawImage(cached,-width/2,-130,width,height);else this.paintGround()
  }
  paintGround(){const c=this.ctx,w=this.season||D.commonGround,n=D.arena.size;c.fillStyle='#49604410';c.beginPath();c.ellipse(0,n*26+34,n*18,40,0,0,Math.PI*2);c.fill();this.shape([[0,n,0],[n,n,0],[n,n,-24],[n*.75,n,-66],[n*.5,n,-82],[0,n,-30]],'#b4a58c');this.shape([[n,0,0],[n,n,0],[n,n,-24],[n,n*.75,-60],[n,n*.375,-80],[n,0,-30]],'#a69984');for(let y=0;y<n;y++)for(let x=0;x<n;x++){const v=(x*7+y*13)%5;this.shape([[x,y,0],[x+1,y,0],[x+1,y+1,0],[x,y+1,0]],D.isPath(x,y)?shade(w.path,(v-2)*2):shade(QuestEnvironment.blend(D.zones[D.districtAt(x,y)]?.color||w.ground,w.ground,.8),Math.round(Math.sin(x*.31)*Math.cos(y*.24)*9)+(v-2)*2));if(D.isPath(x,y)){if((x+y)%3===0)this.line(this.p(x+.12,y+.9,.2),this.p(x+.88,y+.9,.2),'#c4bca447',.8)}else if(D.walkable(x,y)&&(x*11+y*7)%3!==0){const p=this.p(x+.45,y+.5,.3);c.strokeStyle=QuestEnvironment.blend(w.foliage||'#3c9f5a',w.ground,((x+y)%4)*.12);c.lineWidth=1;for(let i=-1;i<=1;i++){c.beginPath();c.moveTo(p[0]+i*3,p[1]);c.lineTo(p[0]+i*4,p[1]-4-((x*7+y*3+i+4)%4));c.stroke()}}}}
- draw(time){this.renderTime=time;this.applyResize();if(!this.w||!this.h)return;const followed=this.players.find(p=>p.id===this.focusId);if(followed){const pos=this.positionFor(followed,time);this.camera={x:pos.x,y:pos.y};this.updateCamera()}this.now=this.clock();this.season=QuestEnvironment.garden();this.labels=[];this.playerLabels=[];this.labelBoxes=[];if(this.groundStamp!==this.season.stamp){this.groundLayer=null;this.groundStamp=this.season.stamp}const c=this.ctx,w=this.season;c.fillStyle=w.sky;c.fillRect(0,0,this.w,this.h);const glow=c.createRadialGradient(this.w*.5,this.h*.35,10,this.w*.5,this.h*.35,this.w*.6);glow.addColorStop(0,'#fffdf299');glow.addColorStop(1,w.sky);c.fillStyle=glow;c.fillRect(0,0,this.w,this.h);this.drawBackdrop?.();c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);this.drawGround();
+ welcomePlazaFloor(){
+  // Walkable paving belongs below every object, never in the depth-sorted queue.
+  const x=43,y=31,w=7.5,d=11;
+  this.shape([[x,y,0],[x+w,y,0],[x+w,y+d,0],[x,y+d,0]],'#c9b99a');
+  for(let row=0;row<11;row++)for(let col=0;col<6;col++){
+   const left=x+.16+col*(w-.32)/6,top=y+.16+row*(d-.32)/11;
+   this.shape([[left,top,0],[left+(w-.32)/6-.035,top,0],[left+(w-.32)/6-.035,top+(d-.32)/11-.035,0],[left,top+(d-.32)/11-.035,0]],(row+col)%2?'#f2e7cf':'#eadcc1');
+  }
+  const cx=46.75,cy=36.5;
+  const ring=radius=>Array.from({length:32},(_,i)=>[cx+Math.cos(i*Math.PI/16)*radius,cy+Math.sin(i*Math.PI/16)*radius,0]);
+  this.shape(ring(2.05),'#cda66c');this.shape(ring(1.9),'#f7edda');
+  this.shape([[cx,cy-1.55,0],[cx+.45,cy-.45,0],[cx+1.55,cy,0],[cx+.45,cy+.45,0],[cx,cy+1.55,0],[cx-.45,cy+.45,0],[cx-1.55,cy,0],[cx-.45,cy-.45,0]],'#edab64');
+  this.shape([[cx,cy-.55,0],[cx+.55,cy,0],[cx,cy+.55,0],[cx-.55,cy,0]],'#fff3dc');
+ }
+ draw(time){this.renderTime=time;this.applyResize();if(!this.w||!this.h)return;const followed=this.players.find(p=>p.id===this.focusId);if(followed){const pos=this.positionFor(followed,time);this.camera={x:pos.x,y:pos.y};this.updateCamera()}this.now=this.clock();this.season=QuestEnvironment.garden();this.labels=[];this.playerLabels=[];this.labelBoxes=[];if(this.groundStamp!==this.season.stamp){this.groundLayer=null;this.groundStamp=this.season.stamp}const c=this.ctx,w=this.season;c.fillStyle=w.sky;c.fillRect(0,0,this.w,this.h);const glow=c.createRadialGradient(this.w*.5,this.h*.35,10,this.w*.5,this.h*.35,this.w*.6);glow.addColorStop(0,'#fffdf299');glow.addColorStop(1,w.sky);c.fillStyle=glow;c.fillRect(0,0,this.w,this.h);this.drawBackdrop?.();c.save();c.translate(this.ox,this.oy);c.scale(this.scale,this.scale);this.drawGround();this.welcomePlazaFloor();
  const entities=[];const add=(depth,fn)=>entities.push({depth,fn});this.districtEntities(time,add);
  this.sceneryEntities(time,add);
- add(83,()=>{this.cube(43,31,7.5,11,3,'#e5d8b9');this.bench(44,32);this.bench(49,40);this.flowers(49,32,this.season.flower);this.label('D2L CHAMPION WONDERLAND',46.5,36.5,43)});
+ for(const[x,y]of[[44,32],[49,40]])add(x+y,()=>this.bench(x,y));
+ for(const[x,y]of[[43.3,31.4],[49.4,31.4],[43.3,41],[49.4,41]])add(x+y,()=>this.flowers(x,y,this.season.flower));
+ this.label('WELCOME · MEET LUCY',46.75,31,28);
  this.crowdSize=this.players.length;for(const p of this.players){const pos=this.positionFor(p,time);add(pos.x+pos.y+.2,()=>this.character(p,time));}
  add(87,()=>this.character({id:'moose-guide',name:'Lucy · guide',world:this.world,x:46.5,y:40.5,moving:false,avatar:{skin:'#b87850',shirt:'#f58220',hair:'#c99d59',style:'bob',hat:'cap',hatColor:'#242424',glasses:'round'}},time));
  entities.sort((a,b)=>a.depth-b.depth);for(const entity of entities)entity.fn();if(this.marker&&time-this.marker.at<2200){const p=this.p(this.marker.x,this.marker.y,2);c.strokeStyle='#f9f5df';c.lineWidth=2;c.beginPath();c.ellipse(p[0],p[1],13,6,0,0,Math.PI*2);c.stroke()}c.restore();this.drawLabels?.();this.drawSeasonOverlay(time);
