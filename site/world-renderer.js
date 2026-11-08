@@ -25,10 +25,10 @@ class WorldRenderer{
   };
   this.mapControls={
    pointerdown:event=>{
-    const p=point(event);if(p.mouse&&event.button!==0&&event.button!==2)return;if(p.mouse&&event.button===0&&this.preview)return;
+    const p=point(event);if(p.mouse&&event.button!==0)return;
     pointers.set(event.pointerId,p);canvas.setPointerCapture?.(event.pointerId);
     if(pointers.size>1){if(gesture){gesture.tap=false;gesture.dragged=true}if(pointers.size===2&&[...pointers.values()].every(p=>!p.mouse))pinch=pair();event.preventDefault();return}
-    gesture={id:event.pointerId,x:p.x,y:p.y,lastX:p.x,lastY:p.y,pan:!p.mouse||event.button===2,mouseButton:p.mouse?event.button:null,dragged:false,tap:true};if(gesture.pan)event.preventDefault();
+    gesture={id:event.pointerId,x:p.x,y:p.y,lastX:p.x,lastY:p.y,pan:true,mouseButton:p.mouse?event.button:null,dragged:false,tap:true};if(gesture.pan)event.preventDefault();
    },
    pointermove:event=>{
     if(!pointers.has(event.pointerId))return;pointers.set(event.pointerId,point(event));
