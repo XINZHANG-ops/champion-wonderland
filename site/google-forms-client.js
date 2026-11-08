@@ -94,7 +94,7 @@
   }).catch(()=>{}).finally(()=>{if(key===portraitKey){making=false;root.dispatchEvent(new Event('cw-portrait-ready'));}});
  }
  function backup(){try{if(job)sessionStorage.setItem(storageKey,JSON.stringify(job));else sessionStorage.removeItem(storageKey);}catch{}}
- function restore(){try{const j=JSON.parse(sessionStorage.getItem(storageKey));if(j?.body&&j.endpoint===root.QUEST_CONFIG?.formsEndpoint&&Date.now()-j.at<15*60*1000){job=j;return true;}sessionStorage.removeItem(storageKey);}catch{}return false;}
+ function restore(){try{const j=JSON.parse(sessionStorage.getItem(storageKey));if(j?.body&&j.endpoint===root.QUEST_CONFIG?.formsEndpoint&&Date.now()-j.at<15*60*1000){const {record}=JSON.parse(j.body);job=j;return {demo:!!(record.demo||record.isSample||record.staffTestMode)};}sessionStorage.removeItem(storageKey);}catch{}return false;}
  function build(record,avatar){
   if(!available)return false;
   prepare(record.industryId,avatar,!!(record.demo||record.isSample||record.staffTestMode));

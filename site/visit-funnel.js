@@ -1,5 +1,7 @@
 (() => {
-  const prefix = 'cw.visit-funnel.v1.', stages = ['opened','started','submit_clicked','accepted','join_clicked'];
+  const prefix = 'cw.visit-funnel.v1.', stages = ['opened','started','industry_view','industry_pick','moose_view','world_join',
+    'tracks_view','track_pick','challenges_view','challenge_pick','matches_view','formats_view','format_pick',
+    'submit_clicked','accepted','join_clicked'];
   let visitor, ready;
   const sending = new Set(), pending = new Set(), done = new Set();
   function storage(method, key, value) {
