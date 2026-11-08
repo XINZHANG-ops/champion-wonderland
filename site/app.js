@@ -58,6 +58,13 @@ function recordVisibleStep() {
    break;
  }
 }
+function formatSubmitState() {
+ const preparing = window.QuestSubmitQueue?.preparing();
+ const ready = window.QuestRecords?.ready();
+ return { enabled: !state.saving && !preparing && ready,
+  label: state.saving ? saveProgressBar(state.saveStage || 'Saving your answers…') :
+   preparing ? 'Preparing card…' : ready ? 'Submit & email my Moose card' : 'Saving unavailable' };
+}
 function render(){let s=state.step,r=role(),ind=industry(),world=s===0?'welcome':s===6?'champion':s>=3?r.id:'welcome';let heading='',body='',note='',eyebrow='',tag='',caption='A little curiosity can take you a long way.';
 if(s===0){eyebrow='YOUR NEXT CHAPTER STARTS HERE';heading='Your challenge.<br>Your moose.<br><span>Your next move.</span>';tag='WELCOME TO D2L CHAMPION WONDERLAND';note='Hi, I’m your guide Lucy! Pick up your Adventure Pass. I’ll help you find your learning superpower.';body=`<p class="intro">Complete a learning mission with Lucy.<br>Discover D2L resources matched to your needs.</p><form id="pass-form" class="quick-pass"><div class="pass-fields"><label class="field">Your name<input id="name" name="name" autocomplete="name" required maxlength="100" placeholder="e.g. Lucy Kang" value="${escapeHTML(state.name)}"></label><label class="field">Work email<input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@organization.com" value="${escapeHTML(state.email)}"></label><label class="field">Organization<input id="organization" name="organization" autocomplete="organization" required maxlength="150" placeholder="Where you make an impact" value="${escapeHTML(state.organization)}"></label><label class="field">Your role / job title<input id="role-title" name="roleTitle" autocomplete="organization-title" required maxlength="100" placeholder="Type your own job title" value="${escapeHTML(state.roleTitle)}"></label></div><button class="primary full" type="submit">Get my adventure pass<span class="arrow">→</span></button></form><button class="demo-link" id="sample">Just exploring? Try with sample details</button>`}
 
@@ -67,7 +74,7 @@ if(s===3){eyebrow='02 / CHOOSE YOUR MISSIONS';heading='What would you<br><span>l
 if(s===4){eyebrow='04 / YOUR PERSONALIZED MISSION MATCH';heading='Your matches.<br><span>Made for your goals.</span>';tag='DISCOVER YOUR NEXT STEP';note='Your learning tracks and challenges are now connected. Here is your Mission Match—next, choose how you want to learn.';body='<div class="powerup-scroll">'+QuestLeadUI.matches(missionState())+'</div>'+controls(!state.followUpSaving,'Continue to resources')}
 
 if(s===4||s===5){window.QuestSubmitQueue?.warm();window.QuestSubmitQueue?.prepare(state.industry,ChampionWorld.getAvatar(),state.isSample||state.staffTestMode);}
-if(s===5){eyebrow='05 / YOUR LEARNING BOOST';heading='How do you<br><span>like to level up?</span>';tag='CHOOSE YOUR NEXT CONNECTION';note='Choose every way you’d like to learn and connect. I’ll bring your preferences into your Moose card.';body=`<p class="intro">Choose the resources and experiences that help you learn best. Pick as many as you want.</p><div class="options grid-two">${channels.map(x=>option(x,state.channels.includes(x.id))).join('')}</div><label class="checkline"><input id="consent" type="checkbox" ${state.contactConsent?'checked':''} ${state.saving?'disabled':''}>I’d like D2L to follow up with resources about my selected challenges and interests. Optional.</label>${controls(!state.saving&&!window.QuestSubmitQueue?.preparing()&&window.QuestRecords?.ready(),state.saving?saveProgressBar(state.saveStage||'Saving your answers…'):window.QuestSubmitQueue?.preparing()?'Preparing card…':window.QuestRecords?.ready()?'Submit & email my Moose card':'Saving unavailable')}`}
+if(s===5){const submit=formatSubmitState();eyebrow='05 / YOUR LEARNING BOOST';heading='How do you<br><span>like to level up?</span>';tag='CHOOSE YOUR NEXT CONNECTION';note='Choose every way you’d like to learn and connect. I’ll bring your preferences into your Moose card.';body=`<p class="intro">Choose the resources and experiences that help you learn best. Pick as many as you want.</p><div class="options grid-two">${channels.map(x=>option(x,state.channels.includes(x.id))).join('')}</div><label class="checkline"><input id="consent" type="checkbox" ${state.contactConsent?'checked':''} ${state.saving?'disabled':''}>I’d like D2L to follow up with resources about my selected challenges and interests. Optional.</label>${controls(submit.enabled,submit.label)}`}
 if(s===6){eyebrow='MISSION COMPLETE / YOUR NEXT CHAPTER';heading='Mission complete.<br><span>Keep the adventure going.</span>';tag='SHARE IDEAS. INSPIRE LEARNING.';note='Your next adventure continues with the D2L Champions community.';body=(window.QuestCards?.markup(state.recordId,{problemsOnly:true})||'')+'<a class="primary full" href="'+QuestSolutions.championsSignupUrl+'" target="_blank" rel="noopener" id="champions-signup">Join D2L Champions <span>↗</span></a>'}
 
 if(s===6&&state.googleHandoff&&!state.complete){
@@ -83,7 +90,7 @@ if(state.passError&&s===0)body+='<p class="world-error" role="alert">'+escapeHTM
 if(state.saveError&&s>=2)body+='<p class="world-error" role="alert">'+escapeHTML(state.saveError)+'</p>';
 $('#app').innerHTML=questTop()+(s>=2&&ChampionWorld.isJoined?.()?'<div class="quest-avatar-tools"><button type="button" class="text-btn" id="customize-moose">Edit my moose ↗</button></div>':'')+(s>0?QuestLeadUI.missionProgress(state):'')+`<div class="layout"><section class="world-side"><div class="world-tag">${tag}</div><div class="scene-wrap">${scene(world,s===3)}</div><p class="world-caption"><i></i>${caption}<i></i></p><div class="pip-note">${escapeHTML(note)}</div></section><section class="panel" aria-live="polite"><div class="eyebrow">${eyebrow}</div><h1>${heading}</h1>${body}<div id="record-save-status" class="record-save-status" role="status" aria-live="polite" hidden></div></section></div>`;
 bind();mountLearningWorld();updateSaveStatus();recordVisibleStep();}
-function bind(){if($('#pending-champions-signup'))$('#pending-champions-signup').onclick=()=>markQuestStage('join_clicked');if($('#retry-handoff'))$('#retry-handoff').onclick=()=>finishHandoff(state);if($('#customize-moose'))$('#customize-moose').onclick=()=>ChampionWorld.open({customize:true,passId:state.recordId,name:'',role:'Learning Explorer',world:state.industry||'he',context:worldContext()});if($('#request-follow-up'))$('#request-follow-up').onclick=requestMissionFollowUp;document.querySelectorAll('[data-mission-demo]').forEach(link=>link.onclick=e=>{const id=e.currentTarget.dataset.solution;if(!state.demoOpenedFor.includes(id))state.demoOpenedFor.push(id);ChampionWorld.saveProgress({...record(),checkpoint:'demo_opened'}).catch(()=>{})});const caseNote=document.querySelector('#usecase-note');if(caseNote)caseNote.oninput=e=>state.useCaseNote=e.target.value.slice(0,240);const next=$('#next'),back=$('#back');if(next)next.onclick=nextQuest; if(back)back.onclick=backQuest;document.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>{const key=b.dataset.answer,value=b.dataset.value,scroll=document.querySelector('.discovery-step')?.scrollTop||0;QuestDiscoveryUI.update(state,key,value);render();const pane=document.querySelector('.discovery-step');if(pane)pane.scrollTop=scroll;document.querySelector('[data-answer="'+key+'"][data-value="'+value+'"]')?.focus({preventScroll:true})});document.querySelectorAll('[data-select]').forEach(btn=>btn.onclick=()=>{select(btn.dataset.select);if(!btn.isConnected)document.querySelector('[data-select="'+btn.dataset.select+'"]')?.focus({preventScroll:true})});document.querySelectorAll('[data-hotspot]').forEach(h=>{const pick=()=>{state.challenge=Number(h.dataset.hotspot);render()};h.onclick=pick;h.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick()}}});if($('#pass-form')){$('#pass-form').onsubmit=async e=>{
+function bind(){if($('#pending-champions-signup'))$('#pending-champions-signup').onclick=()=>markQuestStage('join_clicked');if($('#retry-handoff'))$('#retry-handoff').onclick=()=>finishHandoff(state);if($('#customize-moose'))$('#customize-moose').onclick=()=>ChampionWorld.open({customize:true,passId:state.recordId,name:'',role:'Learning Explorer',world:state.industry||'he',context:worldContext()});if($('#request-follow-up'))$('#request-follow-up').onclick=requestMissionFollowUp;document.querySelectorAll('[data-mission-demo]').forEach(link=>link.onclick=e=>{const id=e.currentTarget.dataset.solution;if(!state.demoOpenedFor.includes(id))state.demoOpenedFor.push(id);ChampionWorld.saveProgress({...record(),checkpoint:'demo_opened'}).catch(()=>{})});const caseNote=document.querySelector('#usecase-note');if(caseNote)caseNote.oninput=e=>state.useCaseNote=e.target.value.slice(0,240);const next=$('#next'),back=$('#back');if(next)next.onclick=nextQuest; if(back)back.onclick=backQuest;document.querySelectorAll('[data-answer]').forEach(button=>button.onclick=()=>toggleAnswer(button));document.querySelectorAll('[data-select]').forEach(btn=>btn.onclick=()=>{select(btn.dataset.select,btn);if(!btn.isConnected)document.querySelector('[data-select="'+btn.dataset.select+'"]')?.focus({preventScroll:true})});document.querySelectorAll('[data-hotspot]').forEach(h=>{const pick=()=>{state.challenge=Number(h.dataset.hotspot);render()};h.onclick=pick;h.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick()}}});if($('#pass-form')){$('#pass-form').onsubmit=async e=>{
  e.preventDefault();const current=state;if(current.passSaving)return;
  const name=$('#name').value.trim(),email=$('#email').value.trim(),organization=$('#organization').value.trim(),roleTitle=$('#role-title').value.trim();
  if(!name||!organization||!roleTitle){(!name?$('#name'):!organization?$('#organization'):$('#role-title')).setCustomValidity('Please enter a value.');$('#pass-form').reportValidity();return}
@@ -100,6 +107,22 @@ function missionPreviewText() {
  const count=state.missionIds.length;
  return count ? count+(count===1?' learning track selected':' learning tracks selected') : 'One D2L Champion Wonderland. Choose your learning mission.';
 }
+function setChoicePressed(button, pressed) {
+ if (!button) return;
+ button.classList.toggle('selected', pressed);
+ button.setAttribute('aria-pressed', String(pressed));
+}
+function toggleAnswer(button) {
+ if (state.navigationPending || state.saving) return;
+ const {answer, value} = button.dataset;
+ QuestDiscoveryUI.update(state, answer, value);
+ if (answer !== 'painPoints') { render(); return; }
+ const selected = state.painPoints.includes(value);
+ setChoicePressed(button, selected);
+ button.closest('fieldset').querySelector('legend small').textContent = QuestDiscoveryUI.challengeCount(state);
+ $('#next').disabled = state.painPoints.length === 0;
+ if (selected) markQuestStage('challenge_pick');
+}
 function toggleMission(index) {
  const mission=QuestMissions.missions[index];
  if(!mission)return;
@@ -107,10 +130,7 @@ function toggleMission(index) {
  state.missionIds=selected ? [...state.missionIds,mission.id] : state.missionIds.filter(id=>id!==mission.id);
  state.challenge=state.missionIds.length ? QuestMissions.missions.findIndex(m=>m.id===state.missionIds[0]) : null;
  const button=document.querySelector('.mission-options [data-select="'+index+'"]');
- if(button){
-  button.classList.toggle('selected',selected);
-  button.setAttribute('aria-pressed',String(selected));
- }
+ setChoicePressed(button, selected);
  const count=document.querySelector('.mission-selection-count');
  if(count)count.textContent=missionCountText();
  const caption=document.querySelector('.scene-reaction');
@@ -119,7 +139,13 @@ function toggleMission(index) {
  if(next)next.disabled=!state.missionIds.length;
  if(selected)markQuestStage('track_pick');
 }
-function select(id){if(state.navigationPending||state.saving)return;if(state.step===1){if(state.role!==id){state.challenge=null;state.products=[]}state.role=id;state.discoveryStep=null}else if(state.step===2){if(id==='hq'&&!QuestCatalog.isD2LOrganization(state.organization))return;if(state.industry!==id){state.challenge=null;state.missionIds=[];state.products=[];state.painPoints=[]}state.industry=id;state.staffTestMode=id==='hq';state.useCases=[];state.discoveryStep=null}else if(state.step===3){toggleMission(id);return}else if(state.step===4||state.step===5){let key=state.step===4?'products':'channels';state[key]=state[key].includes(id)?state[key].filter(x=>x!==id):[...state[key],id]}else if(state.step===6){state.advocacy=id}render()}
+function select(id,button){if(state.navigationPending||state.saving)return;if(state.step===1){if(state.role!==id){state.challenge=null;state.products=[]}state.role=id;state.discoveryStep=null}else if(state.step===2){if(id==='hq'&&!QuestCatalog.isD2LOrganization(state.organization))return;if(state.industry!==id){state.challenge=null;state.missionIds=[];state.products=[];state.painPoints=[]}state.industry=id;state.staffTestMode=id==='hq';state.useCases=[];state.discoveryStep=null}else if(state.step===3){toggleMission(id);return}else if(state.step===5){
+ const selected = !state.channels.includes(id);
+ state.channels = selected ? [...state.channels,id] : state.channels.filter(channel=>channel!==id);
+ setChoicePressed(button || document.querySelector('[data-select="'+id+'"]'), selected);
+ if(selected) markQuestStage('format_pick');
+ return;
+}else if(state.step===4){state.products=state.products.includes(id)?state.products.filter(x=>x!==id):[...state.products,id]}else if(state.step===6){state.advocacy=id}render()}
 function celebrate(){const el=document.createElement('div');el.className='confetti';el.innerHTML=Array.from({length:40},(_,i)=>`<i style="left:${(i*37)%100}%;background:${['#e9a257','#9bb484','#b3c8c0','#dfbdb1'][i%4]};animation-delay:${i*.04}s;transform:rotate(${i*17}deg)"></i>`).join('');document.body.appendChild(el);setTimeout(()=>el.remove(),6000)}
 function reset(){if(state.navigationPending||state.saving)return;const sh=document.createElement('div');sh.className='modal-shade';sh.innerHTML='<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reset-title"><h2 id="reset-title">A fresh adventure?</h2><p>This clears your remembered moose and current adventure on this browser.</p><button class="primary full" id="confirm-reset">Start a new adventure →</button><button class="demo-link" id="cancel-reset">Keep exploring</button></div>';document.body.appendChild(sh);$('#cancel-reset').onclick=()=>sh.remove();$('#confirm-reset').onclick=()=>{window.QuestSubmitQueue?.clear();window.QuestRecords?.forget(state.recordId);window.QuestCards?.forget(state.recordId);state=newQuestState();ChampionWorld.leave();sh.remove();render()};$('#cancel-reset').focus();sh.onkeydown=e=>{if(e.key==='Escape')sh.remove();if(e.key==='Tab'){e.preventDefault();(document.activeElement===$('#cancel-reset')?$('#confirm-reset'):$('#cancel-reset')).focus()}}}
 function record(){const label=(items,id)=>items.find(x=>x.id===id)?.name||null,labels=(items,ids)=>ids.map(id=>label(items,id)).filter(Boolean);return {recordId:state.recordId,demo:state.isSample||state.staffTestMode,isSample:state.isSample||state.staffTestMode,name:state.name,workEmail:state.email,organization:state.organization,role:state.roleTitle||null,roleCategorySource:'inferred_from_title',staffTestMode:state.staffTestMode,industry:state.industry?industry().name:null,industryId:state.industry,missionIds:selectedMissions().map(m=>m.id),missionId:chosenMission()?.id||null,missionProduct:chosenMission()?.productName||null,primaryChallenge:chosenMission()?.title||null,useCaseExample:state.useCaseNote,brightspaceRelationship:label(QuestCatalog.relationships,state.relationship),useCases:labels(QuestCatalog.useCases[state.industry]||[],state.useCases),existingProducts:labels(QuestCatalog.ownedProducts,state.existingProducts),painPoints:labels(QuestCatalog.challenges(state.industry),state.painPoints),desiredOutcome:labels(QuestCatalog.outcomes,state.successMetrics).join(' · '),desiredOutcomes:labels(QuestCatalog.outcomes,state.successMetrics),explorationTiming:label(QuestCatalog.timing,state.timing),productInterest:labels(products,state.products),preferredFormats:labels(channels,state.channels),customerStoryPreferences:labels(QuestCatalog.storyTypes,state.storyTypes),contentTopics:labels(QuestCatalog.topics,state.contentTopics),advocacyInterest:state.advocacy,followUpRequested:state.followUpRequested,followUpRequestedAt:state.followUpRequestedAt,demoOpenedFor:state.demoOpenedFor,followUpOptIn:state.contactConsent,championsRegistrationStatus:state.registrationStatus,questCompleted:state.complete,needs:{missionIds:selectedMissions().map(m=>m.id),missionId:chosenMission()?.id||null,role:state.role,industry:state.industry,useCases:state.useCases,painPoints:state.painPoints,existingProducts:state.existingProducts,successMetric:state.successMetric,successMetrics:state.successMetrics,products:state.products,channels:state.channels,storyTypes:state.storyTypes,contentTopics:state.contentTopics},nurtureSuggestions:state.products.flatMap(p=>state.channels.map(c=>({topic:label(products,p),format:label(channels,c),permission:state.contactConsent?'opted_in':'preference_only'})))}}
@@ -191,7 +217,14 @@ function updateSaveStatus(){
  const retry=$('#retry-record-save');if(retry)retry.onclick=async()=>{if(state.saving)return;if(state.step===5&&!state.complete)return nextQuest();try{await QuestRecords.retry(state.recordId)}catch{} };
 }
 window.QuestRecords?.subscribe(updateSaveStatus);
-window.addEventListener?.('cw-portrait-ready',()=>{if(state.step===5&&!state.saving)render();});
+window.addEventListener?.('cw-portrait-ready',()=>{
+ if (state.step !== 5 || state.saving) return;
+ const button = $('#next');
+ if (!button) return;
+ const {enabled,label} = formatSubmitState();
+ button.disabled = !enabled;
+ button.firstChild.textContent = label;
+});
 $('#reset').onclick=reset;window.QuestSubmitQueue?.warm();
 const restoredJob=window.QuestSubmitQueue?.restore();
 if(restoredJob){state.isSample=!!restoredJob.demo;void finishHandoff(state);}else{render();ChampionWorld.resume?.({onDone:render});}

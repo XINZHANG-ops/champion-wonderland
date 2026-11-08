@@ -2,13 +2,14 @@
 const C=window.QuestCatalog,esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const choices=(items,key,value,multi=false)=>`<div class="discovery-choices" role="group">${items.map(i=>`<button type="button" class="discovery-choice ${(multi?value.includes(i.id):value===i.id)?'selected':''}" data-answer="${key}" data-value="${i.id}" aria-pressed="${multi?value.includes(i.id):value===i.id}">${esc(i.name)}</button>`).join('')}</div>`;
 function workflowFields(s){const selected=QuestMissions.selected(s),mission=selected[0]||QuestMissions.missions[s.challenge]||QuestMissions.missions[0],profile=QuestMissions.describe(mission.id,s.industry,s.role,s.useCases);return `<p class="discovery-intro"><strong>${esc(selected.length>1?selected.length+' learning tracks selected':profile.title)}</strong></p>`}
-function impactFields(s){return `<fieldset><legend>Explore your challenges <small>Choose up to 5 · ${(s.painPoints||[]).length}/5</small></legend>${choices(C.challenges(s.industry),'painPoints',s.painPoints,true)}</fieldset>`}
+function challengeCount(s){return 'Choose up to 5 · '+(s.painPoints||[]).length+'/5'}
+function impactFields(s){return `<fieldset><legend>Explore your challenges <small aria-live="polite">${challengeCount(s)}</small></legend>${choices(C.challenges(s.industry),'painPoints',s.painPoints,true)}</fieldset>`}
 function workflow(s){return '<div class="discovery-step">'+workflowFields(s)+'</div>'}
 function impact(s){return '<div class="discovery-step">'+impactFields(s)+'</div>'}
 function quick(s){return '<div class="discovery-step quick-discovery"><div class="discovery-counter">A FEW QUICK PICKS · ONE PAGE</div>'+workflowFields(s)+impactFields(s)+'</div>'}
 function stories(s){return `<div class="discovery-step story-preferences"><div class="discovery-counter">YOUR LEARNING BOOST · STORIES & TOPICS</div><fieldset><legend>Which customer stories would you actually watch or read?</legend>${choices(C.storyTypes,'storyTypes',s.storyTypes,true)}</fieldset><fieldset><legend>Which topics would make you stop and explore?</legend>${choices(C.topics,'contentTopics',s.contentTopics,true)}</fieldset><p class="discovery-footnote">These preferences guide the kind of content you receive; they don’t opt you into marketing.</p></div>`}
 function update(s,key,value){const lists={useCases:3,painPoints:5,successMetrics:2,existingProducts:10,storyTypes:8,contentTopics:8};if(Object.hasOwn(lists,key)){const current=s[key]||[];if(key==='existingProducts'&&value==='unknown'){s[key]=current.includes(value)?[]:['unknown'];return}const clean=key==='existingProducts'?current.filter(id=>id!=='unknown'):current;s[key]=clean.includes(value)?clean.filter(id=>id!==value):clean.length<lists[key]?[...clean,value]:clean;if(key==='successMetrics')s.successMetric=s.successMetrics[0]||null}else{s[key]=value;if(key==='successMetric')s.successMetrics=value?[value]:[];if(key==='relationship'&&value!=='customer')s.existingProducts=[]}}
-window.QuestDiscoveryUI={workflow,impact,quick,stories,update};
+window.QuestDiscoveryUI={workflow,impact,quick,stories,update,challengeCount};
 })();
 
 
