@@ -68,10 +68,11 @@ function bind(){if($('#retry-handoff'))$('#retry-handoff').onclick=()=>finishHan
  const name=$('#name').value.trim(),email=$('#email').value.trim(),organization=$('#organization').value.trim(),roleTitle=$('#role-title').value.trim();
  if(!name||!organization||!roleTitle){(!name?$('#name'):!organization?$('#organization'):$('#role-title')).setCustomValidity('Please enter a value.');$('#pass-form').reportValidity();return}
  if(!QuestCatalog.isD2LOrganization(organization)&&current.industry==='hq')Object.assign(current,{industry:null,staffTestMode:false,missionIds:[],challenge:null,useCases:[],products:[],discoveryStep:null});
+ window.QuestVisit?.mark('started');
  Object.assign(current,{name,email,organization,roleTitle,role:roleFamily(roleTitle),isSample:false,passSaving:true});
  const fields=[...document.querySelectorAll('#pass-form input, #pass-form button, #sample')].map(node=>({node,disabled:node.disabled}));for(const{node}of fields)node.disabled=true;
  try{await ChampionWorld.saveProgress({...record(),checkpoint:'pass'});if(state!==current)return;current.passError=null;current.step=2;render()}catch(error){current.passError='Your pass could not be prepared: '+error.message;if(state===current)render()}finally{current.passSaving=false;for(const{node,disabled}of fields)node.disabled=disabled}
-};document.querySelectorAll('input').forEach(x=>x.oninput=()=>x.setCustomValidity(''));$('#sample').onclick=()=>{if(state.passSaving)return;Object.assign(state,{isSample:true,name:'Alex Morgan',email:'alex@example.org',organization:'Sample Learning Organization',roleTitle:'Learning Designer',role:'designer',step:2});render()}}window.QuestCards?.bind(state.recordId);if($('#consent'))$('#consent').onchange=e=>{if(!state.saving)state.contactConsent=e.target.checked};if($('#again'))$('#again').onclick=reset;if($('#download'))$('#download').onclick=download;if($('#champions-signup'))$('#champions-signup').onclick=state.googleHandoff?()=>{state.registrationStatus='signup_page_opened'}:trackChampionsSignup;if($('#retry-champions-track'))$('#retry-champions-track').onclick=trackChampionsSignup}
+};document.querySelectorAll('input').forEach(x=>x.oninput=()=>x.setCustomValidity(''));$('#sample').onclick=()=>{if(state.passSaving)return;Object.assign(state,{isSample:true,name:'Alex Morgan',email:'alex@example.org',organization:'Sample Learning Organization',roleTitle:'Learning Designer',role:'designer',step:2});render()}}window.QuestCards?.bind(state.recordId);if($('#consent'))$('#consent').onchange=e=>{if(!state.saving)state.contactConsent=e.target.checked};if($('#again'))$('#again').onclick=reset;if($('#download'))$('#download').onclick=download;if($('#champions-signup'))$('#champions-signup').onclick=()=>{if(!state.isSample&&!state.staffTestMode)window.QuestVisit?.mark('join_clicked');if(state.googleHandoff)state.registrationStatus='signup_page_opened';else return trackChampionsSignup()};if($('#retry-champions-track'))$('#retry-champions-track').onclick=trackChampionsSignup}
 function select(id){if(state.navigationPending||state.saving)return;if(state.step===1){if(state.role!==id){state.challenge=null;state.products=[]}state.role=id;state.discoveryStep=null}else if(state.step===2){if(id==='hq'&&!QuestCatalog.isD2LOrganization(state.organization))return;if(state.industry!==id){state.challenge=null;state.missionIds=[];state.products=[];state.painPoints=[]}state.industry=id;state.staffTestMode=id==='hq';state.useCases=[];state.discoveryStep=null}else if(state.step===3){const mission=QuestMissions.missions[Number(id)];if(mission){state.missionIds=state.missionIds.includes(mission.id)?state.missionIds.filter(m=>m!==mission.id):[...state.missionIds,mission.id];state.challenge=state.missionIds.length?QuestMissions.missions.findIndex(m=>m.id===state.missionIds[0]):null}}else if(state.step===4||state.step===5){let key=state.step===4?'products':'channels';state[key]=state[key].includes(id)?state[key].filter(x=>x!==id):[...state[key],id]}else if(state.step===6){state.advocacy=id}render()}
 function celebrate(){const el=document.createElement('div');el.className='confetti';el.innerHTML=Array.from({length:40},(_,i)=>`<i style="left:${(i*37)%100}%;background:${['#e9a257','#9bb484','#b3c8c0','#dfbdb1'][i%4]};animation-delay:${i*.04}s;transform:rotate(${i*17}deg)"></i>`).join('');document.body.appendChild(el);setTimeout(()=>el.remove(),6000)}
 function reset(){if(state.navigationPending||state.saving)return;const sh=document.createElement('div');sh.className='modal-shade';sh.innerHTML='<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reset-title"><h2 id="reset-title">A fresh adventure?</h2><p>This clears your remembered moose and current adventure on this browser.</p><button class="primary full" id="confirm-reset">Start a new adventure →</button><button class="demo-link" id="cancel-reset">Keep exploring</button></div>';document.body.appendChild(sh);$('#cancel-reset').onclick=()=>sh.remove();$('#confirm-reset').onclick=()=>{window.QuestSubmitQueue?.clear();window.QuestRecords?.forget(state.recordId);window.QuestCards?.forget(state.recordId);state=newQuestState();ChampionWorld.leave();sh.remove();render()};$('#cancel-reset').focus();sh.onkeydown=e=>{if(e.key==='Escape')sh.remove();if(e.key==='Tab'){e.preventDefault();(document.activeElement===$('#cancel-reset')?$('#confirm-reset'):$('#cancel-reset')).focus()}}}
@@ -93,7 +94,7 @@ async function finishHandoff(current){
  if(current.handoffRunning)return;
  current.handoffRunning=true;current.googleHandoff=true;current.step=6;current.saving=true;current.saveError=null;
  try{
-  const receipt=window.QuestSubmitQueue.deliver();render();await receipt;
+  const receipt=window.QuestSubmitQueue.deliver();render();const result=await receipt;current.isSample=!!result?.demo;
   current.complete=true;
  }catch(error){current.saveError=error.message;}
  finally{current.saving=false;current.handoffRunning=false;if(current===state){render();if(current.complete)celebrate();}}
@@ -108,13 +109,14 @@ async function nextQuest(){
   if(current.step===5){
    current.saving=true;current.saveError=null;current.saveStage='Saving your answers…';
    const finalRecord={...record(),checkpoint:'complete',questCompleted:true},avatar=ChampionWorld.getAvatar();
+   if(!finalRecord.demo)window.QuestVisit?.mark('submit_clicked');
    if(window.QuestSubmitQueue?.build(finalRecord,avatar)){await finishHandoff(current);return;}
    render();
    try{
     const saving=ChampionWorld.saveQuest(finalRecord);
     // Artwork stays in the browser. Only send it once the matching Form receipt arrives.
     const prepared=window.QuestCards?.create?.(finalRecord,avatar).catch(()=>null);
-    const receipt=await saving;if(state!==current)return;
+    const receipt=await saving;if(!finalRecord.demo&&receipt?.saved)window.QuestVisit?.mark('accepted');if(state!==current)return;
     current.saveStage=receipt?.cardEnabled&&!finalRecord.demo?'Queuing your Moose card…':'Finishing your adventure…';
     const progress=$('#next .save-progress');
     if(progress){progress.firstElementChild.textContent=current.saveStage;progress.lastElementChild.setAttribute('aria-label',current.saveStage);}

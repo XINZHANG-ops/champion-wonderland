@@ -114,7 +114,9 @@
    if(delay)await new Promise(r=>setTimeout(r,delay));
    const reply=await receipt(pending.id);
    if(['accepted','queued','sent','sending','uncertain'].includes(reply?.status)){
-    if(job===pending){job=null;backup();}return;
+    const {record}=JSON.parse(pending.body);
+    if(!record.demo&&!record.isSample&&!record.staffTestMode)root.QuestVisit?.mark('accepted');
+    if(job===pending){job=null;backup();}return {demo:!!(record.demo||record.isSample||record.staffTestMode)};
    }
   }
   throw Error('We couldn’t confirm your submission. Retry to check or send the same submission again.');
