@@ -1,6 +1,8 @@
 (function(root){
  'use strict';
  const cards=new Map();
+ const savedKey=id=>'cw-card-delivery-v1.'+id;
+ function persist(card){try{if(card.package)sessionStorage.setItem(savedKey(card.record.recordId),JSON.stringify({package:card.package}));}catch{}}
  const list=value=>Array.isArray(value)?value.filter(x=>typeof x==='string'):[];
  function model(record){
   const theme=root.QuestCardArt.themes[record.industryId];if(!theme)throw Error('Choose a learning community first.');
@@ -22,11 +24,11 @@
   card.pending=(async()=>{try{if(!card.package){card.status='preparing';card.changed();try{if(card.prepared){const ready=card.prepared;card.prepared=null;card.package=await ready;if(!card.package)throw Error('Card preparation failed');}else card.package=await create(card.record,card.avatar)}catch{card.status='artError';return}}
    if(card.record.isSample||card.record.staffTestMode||card.record.demo){card.status='sample';return}
    if(!card.receipt.cardEnabled){card.status='unavailable';return}
-   card.status='sending';card.changed();
+   persist(card);card.status='sending';card.changed();
    const result=await root.QuestPrivateFormsClient.sendCard(card.record,card.receipt.submissionId,{requested:true,portrait:card.package.portrait});
    card.status=result.status==='sent'?'sent':result.status==='uncertain'?'uncertain':'queued';
   }catch{card.status='error'}finally{card.pending=null;card.changed()}})();return card.pending;
  }
- function start(record,avatar,receipt,changed,prepared){if(cards.has(record.recordId))return cards.get(record.recordId).pending;const card={record:JSON.parse(JSON.stringify(record)),avatar:root.QuestWorldData.sanitizeAvatar(avatar),receipt:receipt||{},changed,prepared,status:'preparing'};cards.set(record.recordId,card);return run(card);}
- root.QuestCards={model,create,markup,bind,start,forget:id=>cards.delete(id)};
+ function start(record,avatar,receipt,changed,prepared){if(cards.has(record.recordId))return cards.get(record.recordId).pending;const card={record:JSON.parse(JSON.stringify(record)),avatar:root.QuestWorldData.sanitizeAvatar(avatar),receipt:receipt||{},changed,prepared,status:'preparing'};try{const saved=JSON.parse(sessionStorage.getItem(savedKey(record.recordId))||'null');if(saved?.package)card.package=saved.package;}catch{}cards.set(record.recordId,card);return run(card);}
+ root.QuestCards={model,create,markup,bind,start,forget:id=>{cards.delete(id);try{sessionStorage.removeItem(savedKey(id));}catch{}}};
 })(window);
