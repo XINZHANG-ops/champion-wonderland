@@ -238,7 +238,7 @@ function sendSavedCard(){
 }
 function enterLearningWorld(){
  if(!state.formReceipt&&!state.complete)return;
- ChampionWorld.open({customize:!state.mooseBuilt,passId:state.recordId,name:'',
+ ChampionWorld.open({returning:state.mooseBuilt,customize:!state.mooseBuilt,passId:state.recordId,name:'',
   role:state.industry==='hq'?'D2L Team':'Learning Explorer',world:state.industry||'he',
   context:worldContext(),onDone:render});
 }
