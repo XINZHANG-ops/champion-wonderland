@@ -71,3 +71,9 @@ Each segment has its own challenge wording in `site/challenge-catalog.js`, using
 Update Lucy’s existing Apps Script web app to the generated Code.txt (a new version of the same deployment). It uses her existing private card outbox and sendQueuedCards trigger. The frontend detects support using an anonymous capability request. With the previous receiver it continues to use the existing Form and card flow.
 
 On Submit the browser posts once directly to Google. The final page opens immediately. Completion requires a durable queue receipt. A pending request is kept only in the submitting tab's session storage for refresh recovery and removed on confirmation; restored requests expire after 15 minutes. The Google worker writes the Form response before sending the card. Delivery can be delayed by mail quota. The game VM receives neither the questionnaire nor the card.
+
+## Smooth, independent wandering
+
+Movement uses server timestamps and a small adaptive playback buffer, so packet bursts do not make the herd jump together. Polling remains a fallback; EventSource stays alive and resumes streaming when its connection recovers. Each moose has its own walking animation phase. The compatible backend adds independent wandering speeds and longer random pauses, including choosing to stay still. User-directed walks and manual pause keep their existing behavior.
+
+Both the questionnaire preview and the shared-world page use the same renderer. The Google Form and card receiver do not change. Run `node tests/live-transport.cjs` and `node tests/movement-smoothing.cjs`. The private source checkout additionally tests 48 independent walkers, route safety and the real HTTP walking API.

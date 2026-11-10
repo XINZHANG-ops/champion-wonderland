@@ -2,7 +2,7 @@
 'use strict';const D=window.QuestWorldData;
 function shade(hex,amount){const n=parseInt(hex.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+amount)).toString(16).padStart(2,'0')).join('')}
 class WorldRenderer{
- constructor(canvas,{world='he',preview=false,onWalk=()=>{}}={}){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.world=world;this.preview=preview;this.players=[];this.positions=new Map();this.self=null;this.onWalk=onWalk;this.running=true;this.zoom=1;this.camera={x:D.arena.size/2,y:D.arena.size/2};this.clock=()=>Date.now();this.motion=!matchMedia('(prefers-reduced-motion: reduce)').matches;this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(canvas);this.handleClick=e=>{if(this.preview)return;const point=this.groundPoint(e.clientX,e.clientY);if(point.x>=D.arena.min&&point.x<=D.arena.max&&point.y>=D.arena.min&&point.y<=D.arena.max){this.marker={...point,at:performance.now()};this.onWalk(point)}};this.installMapControls();this.handleWheel=e=>{if(e.ctrlKey)return;e.preventDefault();const r=canvas.getBoundingClientRect();this.zoomBy(e.deltaY<0?1.15:1/1.15,{x:e.clientX-r.left,y:e.clientY-r.top})};canvas.addEventListener('wheel',this.handleWheel,{passive:false});this.resize();this.frame=t=>{if(!this.running)return;if(!this.lastFrame||t-this.lastFrame>=16){this.draw(t);this.lastFrame=t}this.raf=requestAnimationFrame(this.frame)};this.raf=requestAnimationFrame(this.frame)}
+ constructor(canvas,{world='he',preview=false,onWalk=()=>{}}={}){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.world=world;this.preview=preview;this.players=[];this.positions=new Map();this.self=null;this.onWalk=onWalk;this.running=true;this.zoom=1;this.camera={x:D.arena.size/2,y:D.arena.size/2};this.clock=()=>Date.now();this.motion=!matchMedia('(prefers-reduced-motion: reduce)').matches;this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(canvas);this.handleClick=e=>{if(this.preview)return;const point=this.groundPoint(e.clientX,e.clientY);if(point.x>=D.arena.min&&point.x<=D.arena.max&&point.y>=D.arena.min&&point.y<=D.arena.max){this.marker={...point,at:performance.now()};this.onWalk(point)}};this.installMapControls();this.handleWheel=e=>{if(e.ctrlKey)return;e.preventDefault();const r=canvas.getBoundingClientRect();this.zoomBy(e.deltaY<0?1.15:1/1.15,{x:e.clientX-r.left,y:e.clientY-r.top})};canvas.addEventListener('wheel',this.handleWheel,{passive:false});this.resize();this.frame=t=>{if(!this.running)return;this.draw(t);this.raf=requestAnimationFrame(this.frame)};this.raf=requestAnimationFrame(this.frame)}
  resize(){const r=this.canvas.getBoundingClientRect();if(!r.width||!r.height)return;const d=Math.min(devicePixelRatio||1,2);this.pendingSize={w:r.width,h:r.height,d,width:Math.round(r.width*d),height:Math.round(r.height*d)};if(!this.w)this.applyResize()}
  applyResize(){const size=this.pendingSize;if(!size)return;this.pendingSize=null;if(this.w===size.w&&this.h===size.h&&this.pixelRatio===size.d)return;this.w=size.w;this.h=size.h;this.pixelRatio=size.d;
   // Resizing clears the bitmap. Apply it only at the start of the frame that repaints it.
@@ -54,18 +54,40 @@ class WorldRenderer{
  focusPlayer(id){const player=this.players.find(p=>p.id===id);if(!player)return false;this.focusId=id;this.camera={x:player.x,y:player.y};this.zoom=3;this.updateCamera();return true}
  findMe(){if(this.focusPlayer(this.self)){this.zoom=2;this.updateCamera();return}const z=D.zones[this.world];this.camera={x:z.x+z.w/2,y:z.y+z.h/2};this.zoom=2;this.updateCamera()}
  setWorld(world){if(D.worlds[world])this.world=world;this.groundLayer=null;this.marker=null}
- setPlayers(players,self){
+ setPlayers(players,self,sentAt){
   const now=typeof performance!=='undefined'?performance.now():Date.now();this.players=players;this.self=self;
   const ids=new Set(players.map(p=>p.id));if(this.focusId&&!ids.has(this.focusId))this.focusId=null;
   for(const id of this.positions.keys())if(!ids.has(id))this.positions.delete(id);
-  for(const p of players){let track=this.positions.get(p.id);if(!track){track={x:p.x,y:p.y,phase:String(p.id).split('').reduce((n,ch)=>n+ch.charCodeAt(0)*37,0),samples:[]};this.positions.set(p.id,track);}track.samples=track.samples||[];track.samples.push({x:p.x,y:p.y,at:now});if(track.samples.length>18)track.samples.shift();}
+  if(Number.isFinite(sentAt)&&this.serverEpoch===undefined){this.serverEpoch=sentAt;this.localEpoch=now}
+  const at=Number.isFinite(sentAt)?this.localEpoch+sentAt-this.serverEpoch:now;
+  if(this.lastSampleAt!==undefined&&at<=this.lastSampleAt)return;
+  const gap=this.lastSampleAt===undefined?100:at-this.lastSampleAt,idleGap=this.hadMoving===false&&gap>2000;
+  this.sampleGaps=this.sampleGaps||[];this.sampleGaps.push(idleGap?100:Math.min(1500,gap));if(this.sampleGaps.length>12)this.sampleGaps.shift();
+  this.playbackDelay=Math.min(1800,Math.max(130,...this.sampleGaps.map(g=>g+30))+Math.max(0,now-at));this.lastSampleAt=at;
+  for(const p of players){
+   let track=this.positions.get(p.id);
+   if(!track){track={x:p.x,y:p.y,phase:String(p.id).split('').reduce((n,ch)=>(n*31+ch.charCodeAt(0))>>>0,0),samples:[]};this.positions.set(p.id,track)}
+   const previous=track.samples.at(-1);
+   if(previous&&(gap>5000||Math.hypot(p.x-previous.x,p.y-previous.y)>8))track.samples=[];
+   if(previous&&idleGap&&Math.hypot(p.x-previous.x,p.y-previous.y)<=8)track.samples.push({...previous,at:at-100});
+   track.samples.push({x:p.x,y:p.y,at,direction:p.direction,pace:p.pace});if(track.samples.length>32)track.samples.splice(0,track.samples.length-32);
+  }
+  this.hadMoving=players.some(p=>p.moving);
  }
  groundPoint(clientX,clientY){const rect=this.canvas.getBoundingClientRect(),x=(clientX-rect.left-this.ox)/this.scale,y=(clientY-rect.top-this.oy)/this.scale;return {x:(y/13+x/26)/2,y:(y/13-x/26)/2};}
  positionFor(p,time){
-  let track=this.positions.get(p.id);if(!track){track={x:p.x,y:p.y,phase:0};this.positions.set(p.id,track);}
-  const samples=track.samples||[],at=time-130;let point=samples[0]||p;
-  for(let i=1;i<samples.length;i++){const b=samples[i],a=samples[i-1];if(at>=b.at){point=b;continue;}const t=Math.max(0,Math.min(1,(at-a.at)/Math.max(1,b.at-a.at)));point={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};break;}
-  track.x=point.x;track.y=point.y;track.moving=!!p.moving||Math.hypot(p.x-track.x,p.y-track.y)>.015;return track;
+  let track=this.positions.get(p.id);if(!track){track={x:p.x,y:p.y,phase:0,samples:[]};this.positions.set(p.id,track)}
+  if(this.playbackFrame!==time){
+   const dt=this.playbackFrame===undefined?0:Math.max(0,time-this.playbackFrame),desired=Math.min(time-(this.playbackDelay||130),this.lastSampleAt??time);
+   const previousAt=this.playbackAt;this.playbackAt=this.playbackAt===undefined?desired:Math.max(this.playbackAt,Math.min(desired,this.playbackAt+dt*1.15));this.playbackStepAt=previousAt===undefined||this.playbackAt>previousAt;this.playbackFrame=time;
+  }
+  const samples=track.samples||[],at=this.playbackAt;let point=samples[0]||p,moving=false;
+  for(let i=1;i<samples.length;i++){
+   const b=samples[i],a=samples[i-1];if(at>=b.at){point=b;continue}
+   const t=Math.max(0,Math.min(1,(at-a.at)/Math.max(1,b.at-a.at)));
+   point={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,direction:b.direction,pace:b.pace};moving=at>=a.at&&Math.hypot(b.x-a.x,b.y-a.y)>.001;break;
+  }
+  track.x=point.x;track.y=point.y;track.pace=point.pace;track.moving=moving&&this.playbackStepAt!==false;return track;
  }
  p(x,y,z=0){return [(x-y)*26,(x+y)*13-z]}
  district(id,draw){const z=D.zones[id],project=this.p;this.p=(x,y,h=0)=>project.call(this,z.origin[0]+x*z.scale,z.origin[1]+y*z.scale,h);try{draw()}finally{this.p=project}}
