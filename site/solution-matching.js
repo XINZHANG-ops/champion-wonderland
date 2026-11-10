@@ -10,7 +10,7 @@ const solutions=[
 {id:'link',icon:'⌘',name:'D2L Link',sub:'Brightspace integrations & connected workflows',url:'https://www.d2l.com/brightspace/integrations/'}];
 solutions.push({id:'optimization',icon:'◎',name:'Optimization Services',sub:'Expert platform, administration & analytics support',url:'https://www.d2l.com/make-more-room-for-what-matters/'});
 const demoUrls={creator:'https://d2l.navattic.com/fz2f03jt',access:'https://d2l.navattic.com/lyj033d',performance:'https://d2l.navattic.com/5u1004jo',lumi:'https://d2l.navattic.com/wcu0mde'};for(const solution of solutions)if(demoUrls[solution.id])solution.demoUrl=demoUrls[solution.id];
-const championsSignupUrl='https://d2l.customershome.com/user-request/';
+const championsSignupUrl='https://d2l.customershome.com/user-request?utm_id=Ignite_Canada&utm_source=Ignite_Canada';
 function match(s){const points=Object.fromEntries(solutions.map(p=>[p.id,0])),reasons={};const add=(id,n,why)=>{points[id]+=n;(reasons[id]??=[]).push(why)};const goals=new Set(s.successMetrics?.length?s.successMetrics:s.successMetric?[s.successMetric]:[]),pain=new Set(s.painPoints||[]),uses=new Set(s.useCases||[]),topics=new Set(s.contentTopics||[]),challenge=s.challengeText||'';
 const missionMap=missionProducts,missionIds=s.missionIds?.length?s.missionIds:s.missionId?[s.missionId]:[],selectedProducts=new Set(missionIds.map(id=>missionMap[id]).filter(Boolean)),missionProduct=missionMap[missionIds[0]];for(const id of selectedProducts)add(id,30,'This power-up supports a mission you chose.');
 if(pain.has('authoring')){add('lumi',6,'You want to reduce manual content creation.');add('creator',3,'You want a more efficient course-authoring workflow.')}
